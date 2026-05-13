@@ -1,165 +1,3 @@
-#!/usr/bin/env python3
-"""
-Investment Portfolio Dashboard Generator
-
-Required packages:
-    pip install yfinance requests
-
-Usage:
-    python update.py
-    Then open portfolio.html in your browser.
-"""
-
-# pip install yfinance requests
-
-import json
-import sys
-from datetime import datetime
-
-
-# ─── Price fetching helpers ───────────────────────────────────────────────────
-
-def fetch_yf(symbol):
-    """Fetch latest close price from Yahoo Finance. Returns float or None."""
-    try:
-        import yfinance as yf
-        t = yf.Ticker(symbol)
-        hist = t.history(period="5d")
-        if not hist.empty:
-            return float(hist["Close"].iloc[-1])
-        p = getattr(t.fast_info, "last_price", None)
-        return float(p) if p else None
-    except Exception as e:
-        print(f"  [warn] {symbol}: {e}")
-        return None
-
-
-def fetch_coingecko(coin_ids):
-    """Fetch USD prices from CoinGecko free API. Returns {id: price}."""
-    valid = [c for c in coin_ids if c]
-    if not valid:
-        return {}
-    try:
-        import requests
-        r = requests.get(
-            "https://api.coingecko.com/api/v3/simple/price",
-            params={"ids": ",".join(valid), "vs_currencies": "usd"},
-            headers={"accept": "application/json", "User-Agent": "portfolio-tracker/1.0"},
-            timeout=20,
-        )
-        r.raise_for_status()
-        d = r.json()
-        return {cid: d[cid]["usd"] for cid in valid if cid in d}
-    except Exception as e:
-        print(f"  [warn] CoinGecko: {e}")
-        return {}
-
-
-# ─── Asset definitions ────────────────────────────────────────────────────────
-
-US_STOCKS = [
-    {"symbol": "GOOGL", "name": "GOOGL"},
-    {"symbol": "NVDA",  "name": "NVDA"},
-    {"symbol": "CRCL",  "name": "CRCL"},
-    {"symbol": "MSFT",  "name": "MSFT"},
-    {"symbol": "VTI",   "name": "VTI"},
-    {"symbol": "QQQ",   "name": "QQQ"},
-]
-
-TW_STOCKS = [
-    {"symbol": "0050.TW",   "name": "元大台灣50 (0050)"},
-    {"symbol": "006208.TW", "name": "富邦優質高息 (006208)"},
-    {"symbol": "2330.TW",   "name": "台積電 (2330)"},
-    {"symbol": "2886.TW",   "name": "兆豐金融 (2886)"},
-]
-
-CRYPTO = [
-    {"symbol": "BTC",   "coingecko_id": "bitcoin",            "note": ""},
-    {"symbol": "ETH",   "coingecko_id": "ethereum",           "note": ""},
-    {"symbol": "WBETH", "coingecko_id": "wrapped-beacon-eth", "note": ""},
-    {"symbol": "BETH",  "coingecko_id": None,                 "note": "※以 ETH 價格替代"},
-    {"symbol": "USDT",  "coingecko_id": "tether",             "note": ""},
-    {"symbol": "USDC",  "coingecko_id": "usd-coin",           "note": ""},
-    {"symbol": "SOL",   "coingecko_id": "solana",             "note": ""},
-    {"symbol": "BNSOL", "coingecko_id": "binance-staked-sol", "note": ""},
-    {"symbol": "BNB",   "coingecko_id": "binancecoin",        "note": ""},
-]
-
-CASH = [
-    {"symbol": "TWD", "name": "台幣 (TWD)"},
-    {"symbol": "USD", "name": "美金 (USD)"},
-    {"symbol": "JPY", "name": "日幣 (JPY)"},
-]
-
-
-# ─── Main ─────────────────────────────────────────────────────────────────────
-
-def main():
-    try:
-        import yfinance  # noqa
-        import requests  # noqa
-    except ImportError as e:
-        print(f"Missing dependency: {e}")
-        print("Please run: pip install yfinance requests")
-        sys.exit(1)
-
-    print("Fetching prices...")
-
-    print("  US stocks...")
-    for a in US_STOCKS:
-        a["price"] = fetch_yf(a["symbol"])
-        a["currency"] = "USD"
-
-    print("  Taiwan stocks...")
-    for a in TW_STOCKS:
-        a["price"] = fetch_yf(a["symbol"])
-        a["currency"] = "TWD"
-
-    print("  Exchange rates...")
-    twd_usd = fetch_yf("TWDUSD=X")
-    jpy_usd = fetch_yf("JPYUSD=X")
-    if twd_usd is None:
-        twd_usd = 0.031
-        print("  [warn] Using fallback TWD/USD = 0.031")
-    if jpy_usd is None:
-        jpy_usd = 0.0067
-        print("  [warn] Using fallback JPY/USD = 0.0067")
-
-    print("  Crypto (CoinGecko)...")
-    cg_ids = [c["coingecko_id"] for c in CRYPTO if c["coingecko_id"]]
-    cg = fetch_coingecko(cg_ids)
-    eth_price = cg.get("ethereum")
-    for a in CRYPTO:
-        cid = a["coingecko_id"]
-        a["price"] = eth_price if cid is None else cg.get(cid)
-        a["currency"] = "USD"
-
-    update_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    data = {
-        "update_time": update_time,
-        "exchange_rates": {"TWDUSD": twd_usd, "JPYUSD": jpy_usd},
-        "us_stocks": US_STOCKS,
-        "tw_stocks": TW_STOCKS,
-        "crypto": CRYPTO,
-        "cash": CASH,
-    }
-
-    html = build_html(data)
-    with open("portfolio.html", "w", encoding="utf-8") as f:
-        f.write(html)
-
-    print(f"\nDone! portfolio.html updated at {update_time}")
-    print("Double-click portfolio.html to open in your browser.")
-
-
-# ─── HTML / CSS / JS template ─────────────────────────────────────────────────
-
-def build_html(data):
-    prices_json = json.dumps(data, ensure_ascii=False, indent=2)
-    return HTML_TEMPLATE.replace("__PORTFOLIO_DATA__", prices_json)
-
-
-HTML_TEMPLATE = """\
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
@@ -339,7 +177,156 @@ tbody tr:hover { background: #f7fafd; }
 <div id="app"></div>
 
 <script>
-const DATA = __PORTFOLIO_DATA__;
+const DATA = {
+  "update_time": "2026-05-13 05:26:11",
+  "exchange_rates": {
+    "TWDUSD": 0.031,
+    "JPYUSD": 0.0067
+  },
+  "us_stocks": [
+    {
+      "symbol": "GOOGL",
+      "name": "GOOGL",
+      "price": null,
+      "currency": "USD"
+    },
+    {
+      "symbol": "NVDA",
+      "name": "NVDA",
+      "price": null,
+      "currency": "USD"
+    },
+    {
+      "symbol": "CRCL",
+      "name": "CRCL",
+      "price": null,
+      "currency": "USD"
+    },
+    {
+      "symbol": "MSFT",
+      "name": "MSFT",
+      "price": null,
+      "currency": "USD"
+    },
+    {
+      "symbol": "VTI",
+      "name": "VTI",
+      "price": null,
+      "currency": "USD"
+    },
+    {
+      "symbol": "QQQ",
+      "name": "QQQ",
+      "price": null,
+      "currency": "USD"
+    }
+  ],
+  "tw_stocks": [
+    {
+      "symbol": "0050.TW",
+      "name": "元大台灣50 (0050)",
+      "price": null,
+      "currency": "TWD"
+    },
+    {
+      "symbol": "006208.TW",
+      "name": "富邦優質高息 (006208)",
+      "price": null,
+      "currency": "TWD"
+    },
+    {
+      "symbol": "2330.TW",
+      "name": "台積電 (2330)",
+      "price": null,
+      "currency": "TWD"
+    },
+    {
+      "symbol": "2886.TW",
+      "name": "兆豐金融 (2886)",
+      "price": null,
+      "currency": "TWD"
+    }
+  ],
+  "crypto": [
+    {
+      "symbol": "BTC",
+      "coingecko_id": "bitcoin",
+      "note": "",
+      "price": null,
+      "currency": "USD"
+    },
+    {
+      "symbol": "ETH",
+      "coingecko_id": "ethereum",
+      "note": "",
+      "price": null,
+      "currency": "USD"
+    },
+    {
+      "symbol": "WBETH",
+      "coingecko_id": "wrapped-beacon-eth",
+      "note": "",
+      "price": null,
+      "currency": "USD"
+    },
+    {
+      "symbol": "BETH",
+      "coingecko_id": null,
+      "note": "※以 ETH 價格替代",
+      "price": null,
+      "currency": "USD"
+    },
+    {
+      "symbol": "USDT",
+      "coingecko_id": "tether",
+      "note": "",
+      "price": null,
+      "currency": "USD"
+    },
+    {
+      "symbol": "USDC",
+      "coingecko_id": "usd-coin",
+      "note": "",
+      "price": null,
+      "currency": "USD"
+    },
+    {
+      "symbol": "SOL",
+      "coingecko_id": "solana",
+      "note": "",
+      "price": null,
+      "currency": "USD"
+    },
+    {
+      "symbol": "BNSOL",
+      "coingecko_id": "binance-staked-sol",
+      "note": "",
+      "price": null,
+      "currency": "USD"
+    },
+    {
+      "symbol": "BNB",
+      "coingecko_id": "binancecoin",
+      "note": "",
+      "price": null,
+      "currency": "USD"
+    }
+  ],
+  "cash": [
+    {
+      "symbol": "TWD",
+      "name": "台幣 (TWD)"
+    },
+    {
+      "symbol": "USD",
+      "name": "美金 (USD)"
+    },
+    {
+      "symbol": "JPY",
+      "name": "日幣 (JPY)"
+    }
+  ]
+};
 
 // ── LocalStorage helpers ──────────────────────────────────────────────────────
 const LS_PREFIX = 'pf_qty_';
@@ -571,7 +558,3 @@ document.addEventListener('DOMContentLoaded', init);
 </script>
 </body>
 </html>
-"""
-
-if __name__ == "__main__":
-    main()
