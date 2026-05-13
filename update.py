@@ -1,0 +1,576 @@
+#!/usr/bin/env python3
+"""
+Investment Portfolio Dashboard Generator
+
+Required packages:
+    pip install yfinance requests
+
+Usage:
+    python update.py
+    Then open portfolio.html in your browser.
+"""
+
+# pip install yfinance requests
+
+import json
+import sys
+from datetime import datetime
+
+
+# ─── Price fetching helpers ───────────────────────────────────────────────────
+
+def fetch_yf(symbol):
+    """Fetch latest close price from Yahoo Finance. Returns float or None."""
+    try:
+        import yfinance as yf
+        t = yf.Ticker(symbol)
+        hist = t.history(period="5d")
+        if not hist.empty:
+            return float(hist["Close"].iloc[-1])
+        p = getattr(t.fast_info, "last_price", None)
+        return float(p) if p else None
+    except Exception as e:
+        print(f"  [warn] {symbol}: {e}")
+        return None
+
+
+def fetch_coingecko(coin_ids):
+    """Fetch USD prices from CoinGecko free API. Returns {id: price}."""
+    valid = [c for c in coin_ids if c]
+    if not valid:
+        return {}
+    try:
+        import requests
+        r = requests.get(
+            "https://api.coingecko.com/api/v3/simple/price",
+            params={"ids": ",".join(valid), "vs_currencies": "usd"},
+            headers={"accept": "application/json", "User-Agent": "portfolio-tracker/1.0"},
+            timeout=20,
+        )
+        r.raise_for_status()
+        d = r.json()
+        return {cid: d[cid]["usd"] for cid in valid if cid in d}
+    except Exception as e:
+        print(f"  [warn] CoinGecko: {e}")
+        return {}
+
+
+# ─── Asset definitions ────────────────────────────────────────────────────────
+
+US_STOCKS = [
+    {"symbol": "GOOGL", "name": "GOOGL"},
+    {"symbol": "NVDA",  "name": "NVDA"},
+    {"symbol": "CRCL",  "name": "CRCL"},
+    {"symbol": "MSFT",  "name": "MSFT"},
+    {"symbol": "VTI",   "name": "VTI"},
+    {"symbol": "QQQ",   "name": "QQQ"},
+]
+
+TW_STOCKS = [
+    {"symbol": "0050.TW",   "name": "元大台灣50 (0050)"},
+    {"symbol": "006208.TW", "name": "富邦優質高息 (006208)"},
+    {"symbol": "2330.TW",   "name": "台積電 (2330)"},
+    {"symbol": "2886.TW",   "name": "兆豐金融 (2886)"},
+]
+
+CRYPTO = [
+    {"symbol": "BTC",   "coingecko_id": "bitcoin",            "note": ""},
+    {"symbol": "ETH",   "coingecko_id": "ethereum",           "note": ""},
+    {"symbol": "WBETH", "coingecko_id": "wrapped-beacon-eth", "note": ""},
+    {"symbol": "BETH",  "coingecko_id": None,                 "note": "※以 ETH 價格替代"},
+    {"symbol": "USDT",  "coingecko_id": "tether",             "note": ""},
+    {"symbol": "USDC",  "coingecko_id": "usd-coin",           "note": ""},
+    {"symbol": "SOL",   "coingecko_id": "solana",             "note": ""},
+    {"symbol": "BNSOL", "coingecko_id": "binance-staked-sol", "note": ""},
+    {"symbol": "BNB",   "coingecko_id": "binancecoin",        "note": ""},
+]
+
+CASH = [
+    {"symbol": "TWD", "name": "台幣 (TWD)"},
+    {"symbol": "USD", "name": "美金 (USD)"},
+    {"symbol": "JPY", "name": "日幣 (JPY)"},
+]
+
+
+# ─── Main ─────────────────────────────────────────────────────────────────────
+
+def main():
+    try:
+        import yfinance  # noqa
+        import requests  # noqa
+    except ImportError as e:
+        print(f"Missing dependency: {e}")
+        print("Please run: pip install yfinance requests")
+        sys.exit(1)
+
+    print("Fetching prices...")
+
+    print("  US stocks...")
+    for a in US_STOCKS:
+        a["price"] = fetch_yf(a["symbol"])
+        a["currency"] = "USD"
+
+    print("  Taiwan stocks...")
+    for a in TW_STOCKS:
+        a["price"] = fetch_yf(a["symbol"])
+        a["currency"] = "TWD"
+
+    print("  Exchange rates...")
+    twd_usd = fetch_yf("TWDUSD=X")
+    jpy_usd = fetch_yf("JPYUSD=X")
+    if twd_usd is None:
+        twd_usd = 0.031
+        print("  [warn] Using fallback TWD/USD = 0.031")
+    if jpy_usd is None:
+        jpy_usd = 0.0067
+        print("  [warn] Using fallback JPY/USD = 0.0067")
+
+    print("  Crypto (CoinGecko)...")
+    cg_ids = [c["coingecko_id"] for c in CRYPTO if c["coingecko_id"]]
+    cg = fetch_coingecko(cg_ids)
+    eth_price = cg.get("ethereum")
+    for a in CRYPTO:
+        cid = a["coingecko_id"]
+        a["price"] = eth_price if cid is None else cg.get(cid)
+        a["currency"] = "USD"
+
+    update_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    data = {
+        "update_time": update_time,
+        "exchange_rates": {"TWDUSD": twd_usd, "JPYUSD": jpy_usd},
+        "us_stocks": US_STOCKS,
+        "tw_stocks": TW_STOCKS,
+        "crypto": CRYPTO,
+        "cash": CASH,
+    }
+
+    html = build_html(data)
+    with open("portfolio.html", "w", encoding="utf-8") as f:
+        f.write(html)
+
+    print(f"\nDone! portfolio.html updated at {update_time}")
+    print("Double-click portfolio.html to open in your browser.")
+
+
+# ─── HTML / CSS / JS template ─────────────────────────────────────────────────
+
+def build_html(data):
+    prices_json = json.dumps(data, ensure_ascii=False, indent=2)
+    return HTML_TEMPLATE.replace("__PORTFOLIO_DATA__", prices_json)
+
+
+HTML_TEMPLATE = """\
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>投資記帳面板</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+  background: #eef2f7;
+  color: #2d3748;
+  min-height: 100vh;
+  padding: 28px 20px 48px;
+}
+
+.container { max-width: 1080px; margin: 0 auto; }
+
+/* ── Page header ── */
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 28px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.page-title {
+  font-size: 1.7rem;
+  font-weight: 800;
+  color: #1a202c;
+  letter-spacing: -0.02em;
+}
+.update-time {
+  font-size: 0.82rem;
+  color: #718096;
+  background: white;
+  padding: 6px 14px;
+  border-radius: 20px;
+  box-shadow: 0 1px 5px rgba(0,0,0,0.08);
+  white-space: nowrap;
+}
+
+/* ── Cards ── */
+.card {
+  background: white;
+  border-radius: 14px;
+  box-shadow: 0 2px 14px rgba(0,0,0,0.07);
+  margin-bottom: 20px;
+  overflow: hidden;
+}
+
+.card-header {
+  padding: 14px 22px;
+  font-size: 1rem;
+  font-weight: 700;
+  color: white;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+.card-header.us     { background: linear-gradient(135deg, #1c3d6b 0%, #2980b9 100%); }
+.card-header.tw     { background: linear-gradient(135deg, #7b2020 0%, #c0392b 100%); }
+.card-header.crypto { background: linear-gradient(135deg, #1a4a2e 0%, #27ae60 100%); }
+.card-header.cash   { background: linear-gradient(135deg, #5a4010 0%, #d4a017 100%); }
+
+.subtotal-badge {
+  font-size: 0.88rem;
+  font-weight: 600;
+  background: rgba(255,255,255,0.18);
+  padding: 4px 12px;
+  border-radius: 12px;
+  white-space: nowrap;
+}
+
+/* ── Tables ── */
+table { width: 100%; border-collapse: collapse; }
+
+thead th {
+  background: #f8fafc;
+  padding: 9px 16px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #718096;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border-bottom: 2px solid #e2e8f0;
+  text-align: right;
+  white-space: nowrap;
+}
+thead th:first-child { text-align: left; min-width: 160px; }
+thead th.col-qty     { min-width: 130px; }
+
+tbody td {
+  padding: 10px 16px;
+  text-align: right;
+  font-size: 0.89rem;
+  border-bottom: 1px solid #f0f4f8;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+tbody td:first-child { text-align: left; }
+tbody tr:last-child td { border-bottom: none; }
+tbody tr:hover { background: #f7fafd; }
+
+.asset-name { font-weight: 600; color: #1a202c; }
+.asset-note { font-size: 0.72rem; color: #a0aec0; font-weight: 400; display: block; margin-top: 2px; }
+
+.price-cell { font-family: 'SFMono-Regular', 'Consolas', monospace; color: #4a5568; }
+.na { color: #e53e3e; font-style: italic; }
+
+/* ── Quantity input ── */
+.qty-input {
+  width: 115px;
+  padding: 5px 10px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  text-align: right;
+  font-size: 0.88rem;
+  color: #2d3748;
+  background: #fafafa;
+  transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+  -moz-appearance: textfield;
+}
+.qty-input::-webkit-inner-spin-button,
+.qty-input::-webkit-outer-spin-button { -webkit-appearance: none; }
+.qty-input:focus {
+  outline: none;
+  border-color: #4299e1;
+  background: white;
+  box-shadow: 0 0 0 3px rgba(66,153,225,0.15);
+}
+.qty-input.has-value { border-color: #90cdf4; background: #ebf8ff; }
+
+.local-val { color: #4a5568; font-family: 'SFMono-Regular', 'Consolas', monospace; }
+.usd-val   { color: #2b6cb0; font-weight: 600; font-family: 'SFMono-Regular', 'Consolas', monospace; }
+
+/* ── Grand total ── */
+.grand-total-card {
+  background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%);
+  border-radius: 14px;
+  padding: 22px 30px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.18);
+  margin-top: 8px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.grand-total-label {
+  color: #a0aec0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+.grand-total-value {
+  font-size: 2rem;
+  font-weight: 800;
+  color: #68d391;
+  font-family: 'SFMono-Regular', 'Consolas', monospace;
+  letter-spacing: -0.02em;
+}
+
+@media (max-width: 640px) {
+  body { padding: 16px 10px 40px; }
+  .page-title { font-size: 1.3rem; }
+  thead th, tbody td { padding: 8px 10px; }
+  .qty-input { width: 90px; }
+  .grand-total-value { font-size: 1.5rem; }
+}
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+const DATA = __PORTFOLIO_DATA__;
+
+// ── LocalStorage helpers ──────────────────────────────────────────────────────
+const LS_PREFIX = 'pf_qty_';
+function getQty(sym) {
+  const v = localStorage.getItem(LS_PREFIX + sym);
+  return v !== null ? parseFloat(v) : 0;
+}
+function setQty(sym, v) {
+  if (!v || isNaN(v) || v <= 0) {
+    localStorage.removeItem(LS_PREFIX + sym);
+  } else {
+    localStorage.setItem(LS_PREFIX + sym, String(v));
+  }
+}
+
+// ── Formatting ────────────────────────────────────────────────────────────────
+function fmtNum(n, d) {
+  d = (d === undefined) ? 2 : d;
+  return n.toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d });
+}
+function naSpan() { return '<span class="na">N/A</span>'; }
+
+function fmtPrice(p, currency) {
+  if (p === null || p === undefined) return naSpan();
+  const prefix = currency === 'USD' ? '$ ' : currency === 'TWD' ? 'NT$ ' : '';
+  const decimals = (p >= 1000) ? 2 : (p >= 1) ? 2 : (p >= 0.01) ? 4 : 6;
+  return '<span class="price-cell">' + prefix + fmtNum(p, decimals) + '</span>';
+}
+
+function fmtLocalVal(v, currency) {
+  if (v === null || v === undefined) return naSpan();
+  const prefix = currency === 'USD' ? '$ '
+               : currency === 'TWD' ? 'NT$ '
+               : currency === 'JPY' ? '¥ '
+               : '';
+  const decimals = currency === 'JPY' ? 0 : 2;
+  return prefix + fmtNum(v, decimals);
+}
+
+function fmtUSD(v) {
+  if (v === null || v === undefined) return naSpan();
+  return '$ ' + fmtNum(v, 2);
+}
+
+// ── Build HTML ────────────────────────────────────────────────────────────────
+function makeTableHead() {
+  return [
+    '<thead><tr>',
+    '<th>標的</th>',
+    '<th>現價</th>',
+    '<th class="col-qty">持有數量</th>',
+    '<th>現值（原幣）</th>',
+    '<th>現值（USD）</th>',
+    '</tr></thead>'
+  ].join('');
+}
+
+function makeRow(sym, name, currency, price, note) {
+  const qty = getQty(sym);
+  const hasVal = qty > 0 ? ' has-value' : '';
+  const noteTag = note ? '<span class="asset-note">' + note + '</span>' : '';
+  return [
+    '<tr data-sym="' + sym + '" data-currency="' + currency + '">',
+    '<td class="asset-name">' + name + noteTag + '</td>',
+    '<td>' + fmtPrice(price, currency) + '</td>',
+    '<td><input type="number" class="qty-input' + hasVal + '" step="any" min="0"',
+    '  value="' + (qty || '') + '"',
+    '  placeholder="0"',
+    '  oninput="onQtyInput(this,\'' + sym + '\')"',
+    '></td>',
+    '<td class="local-val" id="lv-' + sym + '">-</td>',
+    '<td class="usd-val"   id="uv-' + sym + '">-</td>',
+    '</tr>'
+  ].join('');
+}
+
+function makeCard(id, cls, title, rows, subtotalId) {
+  return [
+    '<div class="card">',
+    '<div class="card-header ' + cls + '">',
+    '<span>' + title + '</span>',
+    '<span class="subtotal-badge" id="' + subtotalId + '">小計：$ 0.00</span>',
+    '</div>',
+    '<table>',
+    makeTableHead(),
+    '<tbody>' + rows + '</tbody>',
+    '</table>',
+    '</div>'
+  ].join('');
+}
+
+// ── Event handler ─────────────────────────────────────────────────────────────
+function onQtyInput(input, sym) {
+  const v = parseFloat(input.value);
+  setQty(sym, v);
+  if (v > 0) input.classList.add('has-value');
+  else       input.classList.remove('has-value');
+  recalcAll();
+}
+
+// ── Calculation ───────────────────────────────────────────────────────────────
+function toUSD(localVal, currency) {
+  if (localVal === null) return null;
+  const r = DATA.exchange_rates;
+  if (currency === 'USD') return localVal;
+  if (currency === 'TWD') return localVal * r.TWDUSD;
+  if (currency === 'JPY') return localVal * r.JPYUSD;
+  return localVal;
+}
+
+function calcAssets(assets, isCash) {
+  let total = 0;
+  assets.forEach(function(a) {
+    const sym      = a.symbol;
+    const currency = isCash ? sym : a.currency;
+    const price    = isCash ? 1   : a.price;
+    const qty      = getQty(sym);
+    const lvEl     = document.getElementById('lv-' + sym);
+    const uvEl     = document.getElementById('uv-' + sym);
+    if (!lvEl || !uvEl) return;
+
+    if (qty <= 0) {
+      lvEl.innerHTML = '-';
+      uvEl.innerHTML = '-';
+      return;
+    }
+    if (price === null || price === undefined) {
+      lvEl.innerHTML = naSpan();
+      uvEl.innerHTML = naSpan();
+      return;
+    }
+
+    const localVal = price * qty;
+    const usdVal   = toUSD(localVal, currency);
+    lvEl.innerHTML = fmtLocalVal(localVal, currency);
+    uvEl.innerHTML = fmtUSD(usdVal);
+    total += usdVal;
+  });
+  return total;
+}
+
+function recalcAll() {
+  const usT     = calcAssets(DATA.us_stocks, false);
+  const twT     = calcAssets(DATA.tw_stocks, false);
+  const cryptoT = calcAssets(DATA.crypto,    false);
+  const cashT   = calcAssets(DATA.cash,      true);
+  const grand   = usT + twT + cryptoT + cashT;
+
+  document.getElementById('sub-us').textContent     = '小計：$ ' + fmtNum(usT);
+  document.getElementById('sub-tw').textContent     = '小計：$ ' + fmtNum(twT);
+  document.getElementById('sub-crypto').textContent = '小計：$ ' + fmtNum(cryptoT);
+  document.getElementById('sub-cash').textContent   = '小計：$ ' + fmtNum(cashT);
+  document.getElementById('grand-total').textContent = '$ ' + fmtNum(grand);
+}
+
+// ── Page init ─────────────────────────────────────────────────────────────────
+function init() {
+  // US Stocks rows
+  const usRows = DATA.us_stocks.map(function(a) {
+    return makeRow(a.symbol, a.name, a.currency, a.price, '');
+  }).join('');
+
+  // Taiwan Stocks rows
+  const twRows = DATA.tw_stocks.map(function(a) {
+    return makeRow(a.symbol, a.name, a.currency, a.price, '');
+  }).join('');
+
+  // Crypto rows
+  const cryptoRows = DATA.crypto.map(function(a) {
+    return makeRow(a.symbol, a.symbol, a.currency, a.price, a.note || '');
+  }).join('');
+
+  // Cash rows (price display = face value label)
+  const cashRows = DATA.cash.map(function(a) {
+    const label = a.symbol === 'TWD' ? 'NT$ 1.00'
+                : a.symbol === 'JPY' ? '¥1.00'
+                : '$ 1.00';
+    return [
+      '<tr data-sym="' + a.symbol + '" data-currency="' + a.symbol + '">',
+      '<td class="asset-name">' + a.name + '</td>',
+      '<td><span class="price-cell">' + label + '</span></td>',
+      '<td><input type="number" class="qty-input' + (getQty(a.symbol) > 0 ? ' has-value' : '') + '"',
+      '  step="any" min="0"',
+      '  value="' + (getQty(a.symbol) || '') + '"',
+      '  placeholder="0"',
+      '  oninput="onQtyInput(this,\'' + a.symbol + '\')"',
+      '></td>',
+      '<td class="local-val" id="lv-' + a.symbol + '">-</td>',
+      '<td class="usd-val"   id="uv-' + a.symbol + '">-</td>',
+      '</tr>'
+    ].join('');
+  }).join('');
+
+  const rateInfo = 'USD/TWD: ' + (1 / DATA.exchange_rates.TWDUSD).toFixed(2)
+                 + ' &nbsp;|&nbsp; USD/JPY: ' + (1 / DATA.exchange_rates.JPYUSD).toFixed(2);
+
+  document.getElementById('app').innerHTML = [
+    '<div class="container">',
+
+    // Header
+    '<div class="page-header">',
+    '<div class="page-title">&#x1F4CA; 投資記帳面板</div>',
+    '<div class="update-time">&#x1F559; 最後價格更新：' + DATA.update_time + '</div>',
+    '</div>',
+
+    // Sections
+    makeCard('us',     'us',     '&#x1F1FA;&#x1F1F8; 美股',   usRows,     'sub-us'),
+    makeCard('tw',     'tw',     '&#x1F1F9;&#x1F1FC; 台股',   twRows,     'sub-tw'),
+    makeCard('crypto', 'crypto', '&#x20BF; 加密貨幣',         cryptoRows, 'sub-crypto'),
+    makeCard('cash',   'cash',   '&#x1F4B5; 現金',            cashRows,   'sub-cash'),
+
+    // Grand total
+    '<div class="grand-total-card">',
+    '<div>',
+    '<div class="grand-total-label">&#x1F4B0; 總資產（USD）</div>',
+    '<div style="font-size:0.75rem;color:#718096;margin-top:4px;">' + rateInfo + '</div>',
+    '</div>',
+    '<div class="grand-total-value" id="grand-total">$ 0.00</div>',
+    '</div>',
+
+    '</div>'
+  ].join('');
+
+  recalcAll();
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
+"""
+
+if __name__ == "__main__":
+    main()
