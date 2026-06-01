@@ -165,30 +165,34 @@ def find_coingecko_id(symbol):
 # ─── Custom symbols (file-based bridge between browser and update.py) ─────────
 
 def read_custom_symbols():
-    """Read custom_symbols.json; return {us_stocks, tw_stocks, crypto}."""
+    """Read custom_symbols.json; return {us_stocks, tw_stocks, crypto} as string lists.
+
+    Expected format:
+        {"us_stocks": ["GEV", "AAPL"], "tw_stocks": ["00878"], "crypto": ["DOGE"]}
+    TW symbols should NOT have .TW suffix in the file (update.py adds it).
+    """
     if not os.path.exists(CUSTOM_FILE):
         return {"us_stocks": [], "tw_stocks": [], "crypto": []}
     try:
         with open(CUSTOM_FILE, encoding="utf-8") as f:
             d = json.load(f)
+        def to_syms(lst):
+            # Accept plain strings ["SYM"] or legacy dicts [{"symbol": "SYM"}]
+            result = []
+            for item in lst:
+                if isinstance(item, str):
+                    result.append(item.strip().upper())
+                elif isinstance(item, dict) and item.get("symbol"):
+                    result.append(item["symbol"].strip().upper())
+            return [s for s in result if s]
         return {
-            "us_stocks": d.get("us_stocks", []),
-            "tw_stocks": d.get("tw_stocks", []),
-            "crypto":    d.get("crypto", []),
+            "us_stocks": to_syms(d.get("us_stocks", [])),
+            "tw_stocks": to_syms(d.get("tw_stocks", [])),
+            "crypto":    to_syms(d.get("crypto", [])),
         }
     except Exception as e:
         print(f"  [warn] Reading {CUSTOM_FILE}: {e}")
         return {"us_stocks": [], "tw_stocks": [], "crypto": []}
-
-
-def save_custom_symbols(custom):
-    """Save custom symbols dict (with resolved coingecko_ids) back to file."""
-    try:
-        with open(CUSTOM_FILE, "w", encoding="utf-8") as f:
-            json.dump(custom, f, ensure_ascii=False, indent=2)
-        print(f"  Updated {CUSTOM_FILE} with resolved CoinGecko IDs.")
-    except Exception as e:
-        print(f"  [warn] Saving {CUSTOM_FILE}: {e}")
 
 # ─── Main ─────────────────────────────────────────────────────────────────────
 
@@ -204,29 +208,23 @@ def main():
 
     # ── Read custom symbols and extend asset lists ──
     custom = read_custom_symbols()
-    custom_updated = False
 
     existing_us = {a["symbol"] for a in US_STOCKS}
-    for item in custom.get("us_stocks", []):
-        sym = item.get("symbol", "").strip()
-        if sym and sym not in existing_us:
-            US_STOCKS.append({"symbol": sym, "name": item.get("name") or sym})
+    for sym in custom.get("us_stocks", []):
+        if sym not in existing_us:
+            US_STOCKS.append({"symbol": sym, "name": sym})
 
     existing_tw = {a["symbol"] for a in TW_STOCKS}
-    for item in custom.get("tw_stocks", []):
-        sym = item.get("symbol", "").strip()
-        if sym and sym not in existing_tw:
-            TW_STOCKS.append({"symbol": sym, "name": item.get("name") or sym})
+    for sym in custom.get("tw_stocks", []):
+        # TW symbols in JSON have no .TW suffix; add it for yfinance
+        full = sym if sym.endswith(".TW") else sym + ".TW"
+        if full not in existing_tw:
+            TW_STOCKS.append({"symbol": full, "name": sym})
 
-    existing_crypto_syms = {a["symbol"] for a in CRYPTO}
-    for item in custom.get("crypto", []):
-        sym = item.get("symbol", "").strip()
-        if sym and sym not in existing_crypto_syms:
-            CRYPTO.append({
-                "symbol": sym,
-                "coingecko_id": item.get("coingecko_id"),
-                "note": item.get("note", ""),
-            })
+    existing_crypto = {a["symbol"] for a in CRYPTO}
+    for sym in custom.get("crypto", []):
+        if sym not in existing_crypto:
+            CRYPTO.append({"symbol": sym, "coingecko_id": None, "note": ""})
 
     # ── Fetch stock prices ──
     print("  US stocks...")
@@ -251,17 +249,13 @@ def main():
 
     # ── Resolve CoinGecko IDs for custom crypto missing them ──
     print("  Crypto (CoinGecko)...")
-    custom_crypto_syms = {item["symbol"] for item in custom.get("crypto", [])}
+    custom_crypto_syms = set(custom.get("crypto", []))
     for a in CRYPTO:
         if a["symbol"] in custom_crypto_syms and a["coingecko_id"] is None:
             print(f"    Searching CoinGecko ID for {a['symbol']}...")
             cg_id = find_coingecko_id(a["symbol"])
             if cg_id:
                 a["coingecko_id"] = cg_id
-                for item in custom["crypto"]:
-                    if item["symbol"] == a["symbol"]:
-                        item["coingecko_id"] = cg_id
-                        custom_updated = True
 
     cg_ids = [a["coingecko_id"] for a in CRYPTO if a["coingecko_id"]]
     cg = fetch_coingecko(cg_ids)
@@ -272,9 +266,6 @@ def main():
         a["price"] = eth_price if (cid is None and a["symbol"] in _CRYPTO_ETH_PROXY) \
                      else cg.get(cid) if cid else None
         a["currency"] = "USD"
-
-    if custom_updated:
-        save_custom_symbols(custom)
 
     update_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
@@ -451,6 +442,11 @@ tr:hover .del-btn { opacity: 1; }
   padding: 5px 10px; font-size: 0.82rem; cursor: pointer; color: #718096;
 }
 .cancel-btn:hover { border-color: #cbd5e0; background: #f7fafc; }
+.add-hint {
+  font-size: 0.75rem; color: #718096; margin-top: 6px; line-height: 1.5;
+  background: #fffbeb; border: 1px solid #f6e05e; border-radius: 6px;
+  padding: 6px 10px;
+}
 
 /* ── Grand total bar ── */
 .grand-bar {
@@ -772,7 +768,10 @@ function updateDlBtn() {
 }
 
 function downloadCustom() {
-  var obj = {us_stocks: csGet('us'), tw_stocks: csGet('tw'), crypto: csGet('crypto')};
+  var us  = csGet('us').map(function(x) { return x.symbol; });
+  var tw  = csGet('tw').map(function(x) { return x.symbol.replace(/\.TW$/i, ''); });
+  var cry = csGet('crypto').map(function(x) { return x.symbol; });
+  var obj = {us_stocks: us, tw_stocks: tw, crypto: cry};
   var blob = new Blob([JSON.stringify(obj, null, 2)], {type: 'application/json'});
   var a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
@@ -792,7 +791,7 @@ document.addEventListener('DOMContentLoaded', function() {
 # ─── HTML builders ────────────────────────────────────────────────────────────
 
 def add_form_html(section, sym_placeholder="代號"):
-    """Return the add-symbol form + button for a section."""
+    """Return the add-symbol form + button + usage hint for a section."""
     return (
         '<div class="add-section">'
         f'<div class="add-form" id="add-form-{section}">'
@@ -803,6 +802,9 @@ def add_form_html(section, sym_placeholder="代號"):
         '</div>'
         f'<button class="add-btn" id="add-btn-{section}" onclick="showAddForm(\'{section}\')">'
         '&#xFF0B; 新增標的</button>'
+        '<div class="add-hint">&#x26A0;&#xFE0F; 新增後請點上方『匯出自訂標的』，'
+        '將 <code>custom_symbols.json</code> 儲存到記帳資料夾，'
+        '再重新執行 <code>更新價格.bat</code> 即可抓取最新報價。</div>'
         '</div>\n'
     )
 
