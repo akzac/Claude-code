@@ -764,7 +764,7 @@ function renderCustomRows(section) {
 function updateDlBtn() {
   var has = ['us', 'tw', 'crypto'].some(function(s) { return csGet(s).length > 0; });
   var btn = document.getElementById('dl-custom-btn');
-  if (btn) btn.style.display = has ? '' : 'none';
+  if (btn) btn.style.display = has ? 'inline-block' : 'none';
 }
 
 function downloadCustom() {
