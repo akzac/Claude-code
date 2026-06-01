@@ -22,11 +22,17 @@ body {
   margin-bottom: 24px; flex-wrap: wrap; gap: 10px;
 }
 .page-title { font-size: 1.5rem; font-weight: 800; color: #1a202c; }
-.header-right { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+.header-right { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
 .update-time { font-size: 0.78rem; color: #718096; background: white;
   padding: 4px 12px; border-radius: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
 .rates { font-size: 0.78rem; color: #4a5568; background: white;
   padding: 4px 12px; border-radius: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+.dl-btn {
+  font-size: 0.76rem; background: #ebfff4; color: #276749;
+  border: 1px solid #9ae6b4; border-radius: 20px; padding: 4px 12px;
+  cursor: pointer; transition: background 0.15s; display: none;
+}
+.dl-btn:hover { background: #c6f6d5; }
 
 /* ── Section cards ── */
 .card {
@@ -74,10 +80,21 @@ tfoot td {
 }
 tfoot td:first-child { text-align: left; }
 
-/* ── Asset names ── */
+/* ── Asset name cells ── */
+.aname-cell { text-align: left !important; }
 .aname { font-weight: 600; color: #1a202c; }
+.aname-sub { font-size: 0.78rem; color: #718096; font-weight: 400; }
 .anote { font-size: 0.68rem; color: #a0aec0; display: block; margin-top: 1px; }
 .na { color: #e53e3e; font-style: italic; }
+.custom-tag {
+  display: inline-block; font-size: 0.63rem; background: #ebfff4;
+  color: #276749; border: 1px solid #9ae6b4; border-radius: 3px;
+  padding: 0px 3px; margin-left: 4px; vertical-align: middle;
+}
+.needs-upd {
+  font-size: 0.72rem; color: #c05621; font-style: italic; line-height: 1.4;
+  text-align: center !important;
+}
 
 /* ── Inputs ── */
 .qi {
@@ -102,17 +119,54 @@ tfoot td:first-child { text-align: left; }
 .price-col { font-family: 'SFMono-Regular', Consolas, monospace; color: #4a5568; }
 .totqty { font-family: 'SFMono-Regular', Consolas, monospace; color: #1a202c; font-weight: 600; }
 
+/* ── Delete button (inside name cell) ── */
+.del-btn {
+  background: none; border: none; cursor: pointer; font-size: 0.85rem;
+  color: #fc8181; padding: 0 2px 0 6px; opacity: 0.5;
+  transition: opacity 0.15s; vertical-align: middle; line-height: 1;
+}
+tr:hover .del-btn { opacity: 1; }
+.del-btn:hover { color: #e53e3e; }
+
+/* ── Add symbol form ── */
+.add-section { padding: 10px 16px 12px; border-top: 1px dashed #e2e8f0; }
+.add-btn {
+  background: none; border: 1.5px dashed #90cdf4; border-radius: 6px;
+  color: #4299e1; font-size: 0.82rem; padding: 6px 16px; cursor: pointer;
+  width: 100%; transition: all 0.15s;
+}
+.add-btn:hover { background: #ebf8ff; border-color: #63b3ed; }
+.add-form {
+  display: none; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px;
+}
+.add-form input[type=text] {
+  padding: 5px 8px; border: 1.5px solid #e2e8f0; border-radius: 6px;
+  font-size: 0.82rem; color: #1a202c;
+}
+.add-form input[type=text]:focus { outline: none; border-color: #4299e1; }
+.confirm-btn {
+  background: #4299e1; color: white; border: none; border-radius: 6px;
+  padding: 5px 14px; font-size: 0.82rem; cursor: pointer;
+}
+.confirm-btn:hover { background: #3182ce; }
+.cancel-btn {
+  background: none; border: 1.5px solid #e2e8f0; border-radius: 6px;
+  padding: 5px 10px; font-size: 0.82rem; cursor: pointer; color: #718096;
+}
+.cancel-btn:hover { border-color: #cbd5e0; background: #f7fafc; }
+
 /* ── Grand total bar ── */
 .grand-bar {
   background: linear-gradient(135deg,#1a202c,#2d3748); border-radius: 12px;
   padding: 20px 28px; display: flex; justify-content: space-between; align-items: center;
   box-shadow: 0 4px 20px rgba(0,0,0,0.18); flex-wrap: wrap; gap: 16px;
 }
-.grand-sections { display: flex; gap: 28px; flex-wrap: wrap; align-items: center; }
+.grand-sections { display: flex; gap: 24px; flex-wrap: wrap; align-items: center; }
 .grand-item { text-align: center; }
 .grand-item-label { font-size: 0.72rem; color: #a0aec0; margin-bottom: 2px; }
-.grand-item-val { font-size: 0.92rem; font-weight: 700; color: #e2e8f0;
+.grand-item-val { font-size: 0.9rem; font-weight: 700; color: #e2e8f0;
   font-family: 'SFMono-Regular', Consolas, monospace; }
+.pct-label { display: block; font-size: 0.68rem; color: #718096; margin-top: 2px; }
 .grand-divider { width: 1px; height: 36px; background: rgba(255,255,255,0.15); }
 .grand-total-block { text-align: right; }
 .grand-total-label { font-size: 0.82rem; color: #a0aec0; margin-bottom: 4px; }
@@ -123,46 +177,49 @@ tfoot td:first-child { text-align: left; }
 </head>
 <body>
 <div class="container">
-<div class="page-header"><div class="page-title">&#x1F4CA; 投資記帳面板</div><div class="header-right"><div class="update-time">&#x1F559; 最後更新：2026-05-13 07:07:30</div><div class="rates">1 USD = 32.26 TWD &nbsp;|&nbsp; 1 JPY = 0.2161 TWD</div></div></div>
-<div class="card"><div class="card-hd us"><span>&#x1F1FA;&#x1F1F8; 美股</span><span class="sub-badge" id="sub_us">NT$ 0</span></div><div class="table-wrap"><table><thead><tr><th class="lft" rowspan="2">標的</th><th class="broker-span" colspan="2">Firstrade</th><th class="broker-span" colspan="2">複委託</th><th rowspan="2">合計 (USD)</th><th rowspan="2">現價 (USD)</th><th rowspan="2">成本 (USD)</th><th rowspan="2">損益</th></tr><tr><th>數量</th><th>總值</th><th>數量</th><th>總值</th></tr></thead><tbody><tr><td class="aname">GOOGL</td><td><input type="number" id="sq_GOOGL_0" data-ls="sq_GOOGL_0" step="any" min="0" placeholder="0" style="width:78px" class="qi" oninput="onInput(this)"></td><td class="val" id="sv_GOOGL_0">-</td><td><input type="number" id="sq_GOOGL_1" data-ls="sq_GOOGL_1" step="any" min="0" placeholder="0" style="width:78px" class="qi" oninput="onInput(this)"></td><td class="val" id="sv_GOOGL_1">-</td><td class="val" id="sv_GOOGL_tot">-</td><td class="price-col"><span class="na">N/A</span></td><td><input type="number" id="sc_GOOGL" data-ls="sc_GOOGL" step="any" min="0" placeholder="成本" style="width:82px" class="qi" oninput="onInput(this)"></td><td id="spl_GOOGL">-</td></tr>
-<tr><td class="aname">MSFT</td><td><input type="number" id="sq_MSFT_0" data-ls="sq_MSFT_0" step="any" min="0" placeholder="0" style="width:78px" class="qi" oninput="onInput(this)"></td><td class="val" id="sv_MSFT_0">-</td><td><input type="number" id="sq_MSFT_1" data-ls="sq_MSFT_1" step="any" min="0" placeholder="0" style="width:78px" class="qi" oninput="onInput(this)"></td><td class="val" id="sv_MSFT_1">-</td><td class="val" id="sv_MSFT_tot">-</td><td class="price-col"><span class="na">N/A</span></td><td><input type="number" id="sc_MSFT" data-ls="sc_MSFT" step="any" min="0" placeholder="成本" style="width:82px" class="qi" oninput="onInput(this)"></td><td id="spl_MSFT">-</td></tr>
-<tr><td class="aname">NVDA</td><td><input type="number" id="sq_NVDA_0" data-ls="sq_NVDA_0" step="any" min="0" placeholder="0" style="width:78px" class="qi" oninput="onInput(this)"></td><td class="val" id="sv_NVDA_0">-</td><td><input type="number" id="sq_NVDA_1" data-ls="sq_NVDA_1" step="any" min="0" placeholder="0" style="width:78px" class="qi" oninput="onInput(this)"></td><td class="val" id="sv_NVDA_1">-</td><td class="val" id="sv_NVDA_tot">-</td><td class="price-col"><span class="na">N/A</span></td><td><input type="number" id="sc_NVDA" data-ls="sc_NVDA" step="any" min="0" placeholder="成本" style="width:82px" class="qi" oninput="onInput(this)"></td><td id="spl_NVDA">-</td></tr>
-<tr><td class="aname">VTI</td><td><input type="number" id="sq_VTI_0" data-ls="sq_VTI_0" step="any" min="0" placeholder="0" style="width:78px" class="qi" oninput="onInput(this)"></td><td class="val" id="sv_VTI_0">-</td><td><input type="number" id="sq_VTI_1" data-ls="sq_VTI_1" step="any" min="0" placeholder="0" style="width:78px" class="qi" oninput="onInput(this)"></td><td class="val" id="sv_VTI_1">-</td><td class="val" id="sv_VTI_tot">-</td><td class="price-col"><span class="na">N/A</span></td><td><input type="number" id="sc_VTI" data-ls="sc_VTI" step="any" min="0" placeholder="成本" style="width:82px" class="qi" oninput="onInput(this)"></td><td id="spl_VTI">-</td></tr>
-<tr><td class="aname">CRCL</td><td><input type="number" id="sq_CRCL_0" data-ls="sq_CRCL_0" step="any" min="0" placeholder="0" style="width:78px" class="qi" oninput="onInput(this)"></td><td class="val" id="sv_CRCL_0">-</td><td><input type="number" id="sq_CRCL_1" data-ls="sq_CRCL_1" step="any" min="0" placeholder="0" style="width:78px" class="qi" oninput="onInput(this)"></td><td class="val" id="sv_CRCL_1">-</td><td class="val" id="sv_CRCL_tot">-</td><td class="price-col"><span class="na">N/A</span></td><td><input type="number" id="sc_CRCL" data-ls="sc_CRCL" step="any" min="0" placeholder="成本" style="width:82px" class="qi" oninput="onInput(this)"></td><td id="spl_CRCL">-</td></tr>
-<tr><td class="aname">QQQ</td><td><input type="number" id="sq_QQQ_0" data-ls="sq_QQQ_0" step="any" min="0" placeholder="0" style="width:78px" class="qi" oninput="onInput(this)"></td><td class="val" id="sv_QQQ_0">-</td><td><input type="number" id="sq_QQQ_1" data-ls="sq_QQQ_1" step="any" min="0" placeholder="0" style="width:78px" class="qi" oninput="onInput(this)"></td><td class="val" id="sv_QQQ_1">-</td><td class="val" id="sv_QQQ_tot">-</td><td class="price-col"><span class="na">N/A</span></td><td><input type="number" id="sc_QQQ" data-ls="sc_QQQ" step="any" min="0" placeholder="成本" style="width:82px" class="qi" oninput="onInput(this)"></td><td id="spl_QQQ">-</td></tr>
-</tbody><tfoot><tr><td colspan="7" style="text-align:right">美股小計（TWD）</td><td colspan="2"><strong id="sub_us_f">NT$ 0</strong></td></tr></tfoot></table></div></div>
-<div class="card"><div class="card-hd tw"><span>&#x1F1F9;&#x1F1FC; 台股</span><span class="sub-badge" id="sub_tw">NT$ 0</span></div><div class="table-wrap"><table><thead><tr><th class="lft" rowspan="2">標的</th><th class="broker-span" colspan="2">元大證券</th><th rowspan="2">合計 (TWD)</th><th rowspan="2">現價 (TWD)</th><th rowspan="2">成本 (TWD)</th><th rowspan="2">損益</th></tr><tr><th>數量</th><th>總值</th></tr></thead><tbody><tr><td class="aname">元大台灣50 (0050)</td><td><input type="number" id="tq_0050_TW_0" data-ls="tq_0050_TW_0" step="any" min="0" placeholder="0" style="width:78px" class="qi" oninput="onInput(this)"></td><td class="twd" id="tv_0050_TW_0">-</td><td class="twd" id="tv_0050_TW_tot">-</td><td class="price-col"><span class="na">N/A</span></td><td><input type="number" id="tc_0050_TW" data-ls="tc_0050_TW" step="any" min="0" placeholder="成本" style="width:82px" class="qi" oninput="onInput(this)"></td><td id="tpl_0050_TW">-</td></tr>
-<tr><td class="aname">富邦優質高息 (006208)</td><td><input type="number" id="tq_006208_TW_0" data-ls="tq_006208_TW_0" step="any" min="0" placeholder="0" style="width:78px" class="qi" oninput="onInput(this)"></td><td class="twd" id="tv_006208_TW_0">-</td><td class="twd" id="tv_006208_TW_tot">-</td><td class="price-col"><span class="na">N/A</span></td><td><input type="number" id="tc_006208_TW" data-ls="tc_006208_TW" step="any" min="0" placeholder="成本" style="width:82px" class="qi" oninput="onInput(this)"></td><td id="tpl_006208_TW">-</td></tr>
-<tr><td class="aname">台積電 (2330)</td><td><input type="number" id="tq_2330_TW_0" data-ls="tq_2330_TW_0" step="any" min="0" placeholder="0" style="width:78px" class="qi" oninput="onInput(this)"></td><td class="twd" id="tv_2330_TW_0">-</td><td class="twd" id="tv_2330_TW_tot">-</td><td class="price-col"><span class="na">N/A</span></td><td><input type="number" id="tc_2330_TW" data-ls="tc_2330_TW" step="any" min="0" placeholder="成本" style="width:82px" class="qi" oninput="onInput(this)"></td><td id="tpl_2330_TW">-</td></tr>
-<tr><td class="aname">兆豐金融 (2886)</td><td><input type="number" id="tq_2886_TW_0" data-ls="tq_2886_TW_0" step="any" min="0" placeholder="0" style="width:78px" class="qi" oninput="onInput(this)"></td><td class="twd" id="tv_2886_TW_0">-</td><td class="twd" id="tv_2886_TW_tot">-</td><td class="price-col"><span class="na">N/A</span></td><td><input type="number" id="tc_2886_TW" data-ls="tc_2886_TW" step="any" min="0" placeholder="成本" style="width:82px" class="qi" oninput="onInput(this)"></td><td id="tpl_2886_TW">-</td></tr>
-</tbody><tfoot><tr><td colspan="5" style="text-align:right">台股小計（TWD）</td><td colspan="2"><strong id="sub_tw_f">NT$ 0</strong></td></tr></tfoot></table></div></div>
-<div class="card"><div class="card-hd funds"><span>&#x1F4C8; 基金</span><span class="sub-badge" id="sub_funds">NT$ 0</span></div><div class="table-wrap"><table><thead><tr><th class="lft">基金名稱</th><th>現值 (TWD)</th></tr></thead><tbody><tr><td class="aname">元大基金</td><td><input type="number" id="fv_0" data-ls="fv_0" step="any" min="0" placeholder="NT$ 金額" style="width:140px" class="qi" oninput="onInput(this)"></td></tr>
-<tr><td class="aname">鉅亨基金</td><td><input type="number" id="fv_1" data-ls="fv_1" step="any" min="0" placeholder="NT$ 金額" style="width:140px" class="qi" oninput="onInput(this)"></td></tr>
+<div class="page-header"><div class="page-title">&#x1F4CA; 投資記帳面板</div><div class="header-right"><div class="update-time">&#x1F559; 最後更新：2026-06-01 05:03:28</div><div class="rates">1 USD = 32.26 TWD &nbsp;|&nbsp; 1 JPY = 0.2161 TWD</div><button class="dl-btn" id="dl-custom-btn" onclick="downloadCustom()">&#x1F4E5; 匯出自訂標的 (custom_symbols.json)</button></div></div>
+<div class="card"><div class="card-hd us"><span>&#x1F1FA;&#x1F1F8; 美股</span><span class="sub-badge" id="sub_us">NT$ 0</span></div><div class="table-wrap"><table><thead><tr><th class="lft" rowspan="2">標的</th><th class="broker-span" colspan="2">Firstrade</th><th class="broker-span" colspan="2">複委託</th><th rowspan="2">合計股數</th><th rowspan="2">合計 (USD)</th><th rowspan="2">現價 (USD)</th><th rowspan="2">成本 (USD)</th><th rowspan="2">損益</th></tr><tr><th>數量</th><th>總值</th><th>數量</th><th>總值</th></tr></thead><tbody><tr><td class="aname-cell"><span class="aname">GOOGL</span></td><td><input type="number" id="sq_GOOGL_0" data-ls="sq_GOOGL_0" step="any" min="0" placeholder="0" style="width:78px" class="qi" oninput="onInput(this)"></td><td class="val" id="sv_GOOGL_0">-</td><td><input type="number" id="sq_GOOGL_1" data-ls="sq_GOOGL_1" step="any" min="0" placeholder="0" style="width:78px" class="qi" oninput="onInput(this)"></td><td class="val" id="sv_GOOGL_1">-</td><td class="totqty" id="sq_GOOGL_tot">-</td><td class="val" id="sv_GOOGL_tot">-</td><td class="price-col"><span class="na">N/A</span></td><td><input type="number" id="sc_GOOGL" data-ls="sc_GOOGL" step="any" min="0" placeholder="成本" style="width:82px" class="qi cost-inp" oninput="onInput(this)"></td><td id="spl_GOOGL">-</td></tr>
+<tr><td class="aname-cell"><span class="aname">MSFT</span></td><td><input type="number" id="sq_MSFT_0" data-ls="sq_MSFT_0" step="any" min="0" placeholder="0" style="width:78px" class="qi" oninput="onInput(this)"></td><td class="val" id="sv_MSFT_0">-</td><td><input type="number" id="sq_MSFT_1" data-ls="sq_MSFT_1" step="any" min="0" placeholder="0" style="width:78px" class="qi" oninput="onInput(this)"></td><td class="val" id="sv_MSFT_1">-</td><td class="totqty" id="sq_MSFT_tot">-</td><td class="val" id="sv_MSFT_tot">-</td><td class="price-col"><span class="na">N/A</span></td><td><input type="number" id="sc_MSFT" data-ls="sc_MSFT" step="any" min="0" placeholder="成本" style="width:82px" class="qi cost-inp" oninput="onInput(this)"></td><td id="spl_MSFT">-</td></tr>
+<tr><td class="aname-cell"><span class="aname">NVDA</span></td><td><input type="number" id="sq_NVDA_0" data-ls="sq_NVDA_0" step="any" min="0" placeholder="0" style="width:78px" class="qi" oninput="onInput(this)"></td><td class="val" id="sv_NVDA_0">-</td><td><input type="number" id="sq_NVDA_1" data-ls="sq_NVDA_1" step="any" min="0" placeholder="0" style="width:78px" class="qi" oninput="onInput(this)"></td><td class="val" id="sv_NVDA_1">-</td><td class="totqty" id="sq_NVDA_tot">-</td><td class="val" id="sv_NVDA_tot">-</td><td class="price-col"><span class="na">N/A</span></td><td><input type="number" id="sc_NVDA" data-ls="sc_NVDA" step="any" min="0" placeholder="成本" style="width:82px" class="qi cost-inp" oninput="onInput(this)"></td><td id="spl_NVDA">-</td></tr>
+<tr><td class="aname-cell"><span class="aname">VTI</span></td><td><input type="number" id="sq_VTI_0" data-ls="sq_VTI_0" step="any" min="0" placeholder="0" style="width:78px" class="qi" oninput="onInput(this)"></td><td class="val" id="sv_VTI_0">-</td><td><input type="number" id="sq_VTI_1" data-ls="sq_VTI_1" step="any" min="0" placeholder="0" style="width:78px" class="qi" oninput="onInput(this)"></td><td class="val" id="sv_VTI_1">-</td><td class="totqty" id="sq_VTI_tot">-</td><td class="val" id="sv_VTI_tot">-</td><td class="price-col"><span class="na">N/A</span></td><td><input type="number" id="sc_VTI" data-ls="sc_VTI" step="any" min="0" placeholder="成本" style="width:82px" class="qi cost-inp" oninput="onInput(this)"></td><td id="spl_VTI">-</td></tr>
+<tr><td class="aname-cell"><span class="aname">CRCL</span></td><td><input type="number" id="sq_CRCL_0" data-ls="sq_CRCL_0" step="any" min="0" placeholder="0" style="width:78px" class="qi" oninput="onInput(this)"></td><td class="val" id="sv_CRCL_0">-</td><td><input type="number" id="sq_CRCL_1" data-ls="sq_CRCL_1" step="any" min="0" placeholder="0" style="width:78px" class="qi" oninput="onInput(this)"></td><td class="val" id="sv_CRCL_1">-</td><td class="totqty" id="sq_CRCL_tot">-</td><td class="val" id="sv_CRCL_tot">-</td><td class="price-col"><span class="na">N/A</span></td><td><input type="number" id="sc_CRCL" data-ls="sc_CRCL" step="any" min="0" placeholder="成本" style="width:82px" class="qi cost-inp" oninput="onInput(this)"></td><td id="spl_CRCL">-</td></tr>
+<tr><td class="aname-cell"><span class="aname">QQQ</span></td><td><input type="number" id="sq_QQQ_0" data-ls="sq_QQQ_0" step="any" min="0" placeholder="0" style="width:78px" class="qi" oninput="onInput(this)"></td><td class="val" id="sv_QQQ_0">-</td><td><input type="number" id="sq_QQQ_1" data-ls="sq_QQQ_1" step="any" min="0" placeholder="0" style="width:78px" class="qi" oninput="onInput(this)"></td><td class="val" id="sv_QQQ_1">-</td><td class="totqty" id="sq_QQQ_tot">-</td><td class="val" id="sv_QQQ_tot">-</td><td class="price-col"><span class="na">N/A</span></td><td><input type="number" id="sc_QQQ" data-ls="sc_QQQ" step="any" min="0" placeholder="成本" style="width:82px" class="qi cost-inp" oninput="onInput(this)"></td><td id="spl_QQQ">-</td></tr>
+</tbody><tbody id="custom-us"></tbody><tfoot><tr><td colspan="7" style="text-align:right">美股小計（TWD）</td><td colspan="3"><strong id="sub_us_f">NT$ 0</strong></td></tr></tfoot></table></div><div class="add-section"><div class="add-form" id="add-form-us">  <input type="text" id="add-sym-us" placeholder="代號 (e.g. AAPL)" style="width:130px">  <input type="text" id="add-name-us" placeholder="顯示名稱（選填）" style="width:150px">  <button class="confirm-btn" onclick="confirmAdd('us')">確認新增</button>  <button class="cancel-btn" onclick="cancelAdd('us')">取消</button></div><button class="add-btn" id="add-btn-us" onclick="showAddForm('us')">&#xFF0B; 新增標的</button></div>
+</div>
+<div class="card"><div class="card-hd tw"><span>&#x1F1F9;&#x1F1FC; 台股</span><span class="sub-badge" id="sub_tw">NT$ 0</span></div><div class="table-wrap"><table><thead><tr><th class="lft" rowspan="2">標的</th><th class="broker-span" colspan="2">元大證券</th><th rowspan="2">合計 (TWD)</th><th rowspan="2">現價 (TWD)</th><th rowspan="2">成本 (TWD)</th><th rowspan="2">損益</th></tr><tr><th>數量</th><th>總值</th></tr></thead><tbody><tr><td class="aname-cell"><span class="aname">元大台灣50 (0050)</span></td><td><input type="number" id="tq_0050_TW_0" data-ls="tq_0050_TW_0" step="any" min="0" placeholder="0" style="width:78px" class="qi" oninput="onInput(this)"></td><td class="twd" id="tv_0050_TW_0">-</td><td class="twd" id="tv_0050_TW_tot">-</td><td class="price-col"><span class="na">N/A</span></td><td><input type="number" id="tc_0050_TW" data-ls="tc_0050_TW" step="any" min="0" placeholder="成本" style="width:82px" class="qi cost-inp" oninput="onInput(this)"></td><td id="tpl_0050_TW">-</td></tr>
+<tr><td class="aname-cell"><span class="aname">富邦優質高息 (006208)</span></td><td><input type="number" id="tq_006208_TW_0" data-ls="tq_006208_TW_0" step="any" min="0" placeholder="0" style="width:78px" class="qi" oninput="onInput(this)"></td><td class="twd" id="tv_006208_TW_0">-</td><td class="twd" id="tv_006208_TW_tot">-</td><td class="price-col"><span class="na">N/A</span></td><td><input type="number" id="tc_006208_TW" data-ls="tc_006208_TW" step="any" min="0" placeholder="成本" style="width:82px" class="qi cost-inp" oninput="onInput(this)"></td><td id="tpl_006208_TW">-</td></tr>
+<tr><td class="aname-cell"><span class="aname">台積電 (2330)</span></td><td><input type="number" id="tq_2330_TW_0" data-ls="tq_2330_TW_0" step="any" min="0" placeholder="0" style="width:78px" class="qi" oninput="onInput(this)"></td><td class="twd" id="tv_2330_TW_0">-</td><td class="twd" id="tv_2330_TW_tot">-</td><td class="price-col"><span class="na">N/A</span></td><td><input type="number" id="tc_2330_TW" data-ls="tc_2330_TW" step="any" min="0" placeholder="成本" style="width:82px" class="qi cost-inp" oninput="onInput(this)"></td><td id="tpl_2330_TW">-</td></tr>
+<tr><td class="aname-cell"><span class="aname">兆豐金融 (2886)</span></td><td><input type="number" id="tq_2886_TW_0" data-ls="tq_2886_TW_0" step="any" min="0" placeholder="0" style="width:78px" class="qi" oninput="onInput(this)"></td><td class="twd" id="tv_2886_TW_0">-</td><td class="twd" id="tv_2886_TW_tot">-</td><td class="price-col"><span class="na">N/A</span></td><td><input type="number" id="tc_2886_TW" data-ls="tc_2886_TW" step="any" min="0" placeholder="成本" style="width:82px" class="qi cost-inp" oninput="onInput(this)"></td><td id="tpl_2886_TW">-</td></tr>
+</tbody><tbody id="custom-tw"></tbody><tfoot><tr><td colspan="4" style="text-align:right">台股小計（TWD）</td><td colspan="3"><strong id="sub_tw_f">NT$ 0</strong></td></tr></tfoot></table></div><div class="add-section"><div class="add-form" id="add-form-tw">  <input type="text" id="add-sym-tw" placeholder="代號 (e.g. 0056)" style="width:130px">  <input type="text" id="add-name-tw" placeholder="顯示名稱（選填）" style="width:150px">  <button class="confirm-btn" onclick="confirmAdd('tw')">確認新增</button>  <button class="cancel-btn" onclick="cancelAdd('tw')">取消</button></div><button class="add-btn" id="add-btn-tw" onclick="showAddForm('tw')">&#xFF0B; 新增標的</button></div>
+</div>
+<div class="card"><div class="card-hd funds"><span>&#x1F4C8; 基金</span><span class="sub-badge" id="sub_funds">NT$ 0</span></div><div class="table-wrap"><table><thead><tr><th class="lft">基金名稱</th><th>現值 (TWD)</th></tr></thead><tbody><tr><td class="aname-cell"><span class="aname">元大基金</span></td><td><input type="number" id="fv_0" data-ls="fv_0" step="any" min="0" placeholder="NT$ 金額" style="width:140px" class="qi" oninput="onInput(this)"></td></tr>
+<tr><td class="aname-cell"><span class="aname">鉅亨基金</span></td><td><input type="number" id="fv_1" data-ls="fv_1" step="any" min="0" placeholder="NT$ 金額" style="width:140px" class="qi" oninput="onInput(this)"></td></tr>
 </tbody><tfoot><tr><td style="text-align:right">基金小計（TWD）</td><td><strong id="sub_funds_f">NT$ 0</strong></td></tr></tfoot></table></div></div>
-<div class="card"><div class="card-hd crypto"><span>&#x20BF; 加密貨幣</span><span class="sub-badge" id="sub_crypto">NT$ 0</span></div><div class="table-wrap"><table><thead><tr><th class="lft">幣種</th><th>Binance</th><th>OKX</th><th>Bitget</th><th>派網</th><th>OKX WEB3.0</th><th>Bitget Wallet</th><th>Phantom</th><th>總數量</th><th>現價 (USD)</th><th>成本 (USD)</th><th>總值 (USD)</th><th>盈虧</th></tr></thead><tbody><tr><td class="aname">BTC</td><td><input type="number" id="cq_BTC_0" data-ls="cq_BTC_0" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_BTC_1" data-ls="cq_BTC_1" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_BTC_2" data-ls="cq_BTC_2" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_BTC_3" data-ls="cq_BTC_3" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_BTC_4" data-ls="cq_BTC_4" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_BTC_5" data-ls="cq_BTC_5" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_BTC_6" data-ls="cq_BTC_6" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td class="totqty" id="ctq_BTC">-</td><td class="price-col"><span class="na">N/A</span></td><td><input type="number" id="cc_BTC" data-ls="cc_BTC" step="any" min="0" placeholder="成本" style="width:82px" class="qi" oninput="onInput(this)"></td><td class="val" id="ctv_BTC">-</td><td id="cpl_BTC">-</td></tr>
-<tr><td class="aname">ETH</td><td><input type="number" id="cq_ETH_0" data-ls="cq_ETH_0" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_ETH_1" data-ls="cq_ETH_1" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_ETH_2" data-ls="cq_ETH_2" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_ETH_3" data-ls="cq_ETH_3" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_ETH_4" data-ls="cq_ETH_4" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_ETH_5" data-ls="cq_ETH_5" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_ETH_6" data-ls="cq_ETH_6" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td class="totqty" id="ctq_ETH">-</td><td class="price-col"><span class="na">N/A</span></td><td><input type="number" id="cc_ETH" data-ls="cc_ETH" step="any" min="0" placeholder="成本" style="width:82px" class="qi" oninput="onInput(this)"></td><td class="val" id="ctv_ETH">-</td><td id="cpl_ETH">-</td></tr>
-<tr><td class="aname">WBETH</td><td><input type="number" id="cq_WBETH_0" data-ls="cq_WBETH_0" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_WBETH_1" data-ls="cq_WBETH_1" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_WBETH_2" data-ls="cq_WBETH_2" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_WBETH_3" data-ls="cq_WBETH_3" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_WBETH_4" data-ls="cq_WBETH_4" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_WBETH_5" data-ls="cq_WBETH_5" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_WBETH_6" data-ls="cq_WBETH_6" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td class="totqty" id="ctq_WBETH">-</td><td class="price-col"><span class="na">N/A</span></td><td><input type="number" id="cc_WBETH" data-ls="cc_WBETH" step="any" min="0" placeholder="成本" style="width:82px" class="qi" oninput="onInput(this)"></td><td class="val" id="ctv_WBETH">-</td><td id="cpl_WBETH">-</td></tr>
-<tr><td class="aname">BETH<span class="anote">※以 ETH 價格替代</span></td><td><input type="number" id="cq_BETH_0" data-ls="cq_BETH_0" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_BETH_1" data-ls="cq_BETH_1" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_BETH_2" data-ls="cq_BETH_2" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_BETH_3" data-ls="cq_BETH_3" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_BETH_4" data-ls="cq_BETH_4" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_BETH_5" data-ls="cq_BETH_5" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_BETH_6" data-ls="cq_BETH_6" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td class="totqty" id="ctq_BETH">-</td><td class="price-col"><span class="na">N/A</span></td><td><input type="number" id="cc_BETH" data-ls="cc_BETH" step="any" min="0" placeholder="成本" style="width:82px" class="qi" oninput="onInput(this)"></td><td class="val" id="ctv_BETH">-</td><td id="cpl_BETH">-</td></tr>
-<tr><td class="aname">USDT</td><td><input type="number" id="cq_USDT_0" data-ls="cq_USDT_0" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_USDT_1" data-ls="cq_USDT_1" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_USDT_2" data-ls="cq_USDT_2" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_USDT_3" data-ls="cq_USDT_3" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_USDT_4" data-ls="cq_USDT_4" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_USDT_5" data-ls="cq_USDT_5" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_USDT_6" data-ls="cq_USDT_6" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td class="totqty" id="ctq_USDT">-</td><td class="price-col"><span class="na">N/A</span></td><td><input type="number" id="cc_USDT" data-ls="cc_USDT" step="any" min="0" placeholder="成本" style="width:82px" class="qi" oninput="onInput(this)"></td><td class="val" id="ctv_USDT">-</td><td id="cpl_USDT">-</td></tr>
-<tr><td class="aname">USDC</td><td><input type="number" id="cq_USDC_0" data-ls="cq_USDC_0" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_USDC_1" data-ls="cq_USDC_1" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_USDC_2" data-ls="cq_USDC_2" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_USDC_3" data-ls="cq_USDC_3" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_USDC_4" data-ls="cq_USDC_4" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_USDC_5" data-ls="cq_USDC_5" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_USDC_6" data-ls="cq_USDC_6" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td class="totqty" id="ctq_USDC">-</td><td class="price-col"><span class="na">N/A</span></td><td><input type="number" id="cc_USDC" data-ls="cc_USDC" step="any" min="0" placeholder="成本" style="width:82px" class="qi" oninput="onInput(this)"></td><td class="val" id="ctv_USDC">-</td><td id="cpl_USDC">-</td></tr>
-<tr><td class="aname">BNB</td><td><input type="number" id="cq_BNB_0" data-ls="cq_BNB_0" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_BNB_1" data-ls="cq_BNB_1" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_BNB_2" data-ls="cq_BNB_2" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_BNB_3" data-ls="cq_BNB_3" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_BNB_4" data-ls="cq_BNB_4" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_BNB_5" data-ls="cq_BNB_5" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_BNB_6" data-ls="cq_BNB_6" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td class="totqty" id="ctq_BNB">-</td><td class="price-col"><span class="na">N/A</span></td><td><input type="number" id="cc_BNB" data-ls="cc_BNB" step="any" min="0" placeholder="成本" style="width:82px" class="qi" oninput="onInput(this)"></td><td class="val" id="ctv_BNB">-</td><td id="cpl_BNB">-</td></tr>
-<tr><td class="aname">SOL</td><td><input type="number" id="cq_SOL_0" data-ls="cq_SOL_0" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_SOL_1" data-ls="cq_SOL_1" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_SOL_2" data-ls="cq_SOL_2" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_SOL_3" data-ls="cq_SOL_3" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_SOL_4" data-ls="cq_SOL_4" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_SOL_5" data-ls="cq_SOL_5" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_SOL_6" data-ls="cq_SOL_6" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td class="totqty" id="ctq_SOL">-</td><td class="price-col"><span class="na">N/A</span></td><td><input type="number" id="cc_SOL" data-ls="cc_SOL" step="any" min="0" placeholder="成本" style="width:82px" class="qi" oninput="onInput(this)"></td><td class="val" id="ctv_SOL">-</td><td id="cpl_SOL">-</td></tr>
-<tr><td class="aname">BNSOL</td><td><input type="number" id="cq_BNSOL_0" data-ls="cq_BNSOL_0" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_BNSOL_1" data-ls="cq_BNSOL_1" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_BNSOL_2" data-ls="cq_BNSOL_2" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_BNSOL_3" data-ls="cq_BNSOL_3" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_BNSOL_4" data-ls="cq_BNSOL_4" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_BNSOL_5" data-ls="cq_BNSOL_5" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_BNSOL_6" data-ls="cq_BNSOL_6" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td class="totqty" id="ctq_BNSOL">-</td><td class="price-col"><span class="na">N/A</span></td><td><input type="number" id="cc_BNSOL" data-ls="cc_BNSOL" step="any" min="0" placeholder="成本" style="width:82px" class="qi" oninput="onInput(this)"></td><td class="val" id="ctv_BNSOL">-</td><td id="cpl_BNSOL">-</td></tr>
-</tbody><tfoot><tr><td colspan="11" style="text-align:right">加密貨幣小計（TWD）</td><td colspan="2"><strong id="sub_crypto_f">NT$ 0</strong></td></tr></tfoot></table></div></div>
-<div class="card"><div class="card-hd banks"><span>&#x1F4B5; 資金</span><span class="sub-badge" id="sub_banks">NT$ 0</span></div><div class="table-wrap"><table><thead><tr><th class="lft">銀行</th><th>活存 (TWD)</th><th>定存 (TWD)</th><th>小計 (TWD)</th></tr></thead><tbody><tr><td class="aname">中信</td><td><input type="number" id="bd_0_0" data-ls="bd_0_0" step="any" min="0" placeholder="活存" style="width:120px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="bd_0_1" data-ls="bd_0_1" step="any" min="0" placeholder="定存" style="width:120px" class="qi" oninput="onInput(this)"></td><td class="twd" id="bs_0">-</td></tr>
-<tr><td class="aname">聯邦</td><td><input type="number" id="bd_1_0" data-ls="bd_1_0" step="any" min="0" placeholder="活存" style="width:120px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="bd_1_1" data-ls="bd_1_1" step="any" min="0" placeholder="定存" style="width:120px" class="qi" oninput="onInput(this)"></td><td class="twd" id="bs_1">-</td></tr>
-<tr><td class="aname">LINE BANK</td><td><input type="number" id="bd_2_0" data-ls="bd_2_0" step="any" min="0" placeholder="活存" style="width:120px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="bd_2_1" data-ls="bd_2_1" step="any" min="0" placeholder="定存" style="width:120px" class="qi" oninput="onInput(this)"></td><td class="twd" id="bs_2">-</td></tr>
-<tr><td class="aname">中華郵政</td><td><input type="number" id="bd_3_0" data-ls="bd_3_0" step="any" min="0" placeholder="活存" style="width:120px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="bd_3_1" data-ls="bd_3_1" step="any" min="0" placeholder="定存" style="width:120px" class="qi" oninput="onInput(this)"></td><td class="twd" id="bs_3">-</td></tr>
-<tr><td class="aname">元大</td><td><input type="number" id="bd_4_0" data-ls="bd_4_0" step="any" min="0" placeholder="活存" style="width:120px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="bd_4_1" data-ls="bd_4_1" step="any" min="0" placeholder="定存" style="width:120px" class="qi" oninput="onInput(this)"></td><td class="twd" id="bs_4">-</td></tr>
-<tr><td class="aname">永豐</td><td><input type="number" id="bd_5_0" data-ls="bd_5_0" step="any" min="0" placeholder="活存" style="width:120px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="bd_5_1" data-ls="bd_5_1" step="any" min="0" placeholder="定存" style="width:120px" class="qi" oninput="onInput(this)"></td><td class="twd" id="bs_5">-</td></tr>
-</tbody><tbody style="border-top:3px solid #e2e8f0"><tr><td colspan="4" style="padding:6px 10px;background:#f8fafc;font-size:0.72rem;font-weight:700;color:#718096;text-transform:uppercase;letter-spacing:.05em">外幣</td></tr><tr><td class="aname">美金 (USD)</td><td><input type="number" id="fx_USD" data-ls="fx_USD" step="any" min="0" placeholder="USD 金額" style="width:120px" class="qi" oninput="onInput(this)"></td><td class="price-col">1 USD = 32.26 TWD</td><td class="twd" id="fxt_USD">-</td></tr>
-<tr><td class="aname">日幣 (JPY)</td><td><input type="number" id="fx_JPY" data-ls="fx_JPY" step="any" min="0" placeholder="JPY 金額" style="width:120px" class="qi" oninput="onInput(this)"></td><td class="price-col">1 JPY = 0.2161 TWD</td><td class="twd" id="fxt_JPY">-</td></tr>
+<div class="card"><div class="card-hd crypto"><span>&#x20BF; 加密貨幣</span><span class="sub-badge" id="sub_crypto">NT$ 0</span></div><div class="table-wrap"><table><thead><tr><th class="lft">幣種</th><th>Binance</th><th>OKX</th><th>Bitget</th><th>派網</th><th>OKX WEB3.0</th><th>Bitget Wallet</th><th>Phantom</th><th>總數量</th><th>現價 (USD)</th><th>成本 (USD)</th><th>總值 (USD)</th><th>盈虧</th></tr></thead><tbody><tr><td class="aname-cell"><span class="aname">BTC</span></td><td><input type="number" id="cq_BTC_0" data-ls="cq_BTC_0" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_BTC_1" data-ls="cq_BTC_1" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_BTC_2" data-ls="cq_BTC_2" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_BTC_3" data-ls="cq_BTC_3" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_BTC_4" data-ls="cq_BTC_4" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_BTC_5" data-ls="cq_BTC_5" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_BTC_6" data-ls="cq_BTC_6" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td class="totqty" id="ctq_BTC">-</td><td class="price-col"><span class="na">N/A</span></td><td><input type="number" id="cc_BTC" data-ls="cc_BTC" step="any" min="0" placeholder="成本" style="width:82px" class="qi cost-inp" oninput="onInput(this)"></td><td class="val" id="ctv_BTC">-</td><td id="cpl_BTC">-</td></tr>
+<tr><td class="aname-cell"><span class="aname">ETH</span></td><td><input type="number" id="cq_ETH_0" data-ls="cq_ETH_0" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_ETH_1" data-ls="cq_ETH_1" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_ETH_2" data-ls="cq_ETH_2" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_ETH_3" data-ls="cq_ETH_3" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_ETH_4" data-ls="cq_ETH_4" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_ETH_5" data-ls="cq_ETH_5" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_ETH_6" data-ls="cq_ETH_6" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td class="totqty" id="ctq_ETH">-</td><td class="price-col"><span class="na">N/A</span></td><td><input type="number" id="cc_ETH" data-ls="cc_ETH" step="any" min="0" placeholder="成本" style="width:82px" class="qi cost-inp" oninput="onInput(this)"></td><td class="val" id="ctv_ETH">-</td><td id="cpl_ETH">-</td></tr>
+<tr><td class="aname-cell"><span class="aname">WBETH</span></td><td><input type="number" id="cq_WBETH_0" data-ls="cq_WBETH_0" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_WBETH_1" data-ls="cq_WBETH_1" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_WBETH_2" data-ls="cq_WBETH_2" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_WBETH_3" data-ls="cq_WBETH_3" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_WBETH_4" data-ls="cq_WBETH_4" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_WBETH_5" data-ls="cq_WBETH_5" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_WBETH_6" data-ls="cq_WBETH_6" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td class="totqty" id="ctq_WBETH">-</td><td class="price-col"><span class="na">N/A</span></td><td><input type="number" id="cc_WBETH" data-ls="cc_WBETH" step="any" min="0" placeholder="成本" style="width:82px" class="qi cost-inp" oninput="onInput(this)"></td><td class="val" id="ctv_WBETH">-</td><td id="cpl_WBETH">-</td></tr>
+<tr><td class="aname-cell"><span class="aname">BETH</span><span class="anote">※以 ETH 價格替代</span></td><td><input type="number" id="cq_BETH_0" data-ls="cq_BETH_0" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_BETH_1" data-ls="cq_BETH_1" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_BETH_2" data-ls="cq_BETH_2" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_BETH_3" data-ls="cq_BETH_3" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_BETH_4" data-ls="cq_BETH_4" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_BETH_5" data-ls="cq_BETH_5" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_BETH_6" data-ls="cq_BETH_6" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td class="totqty" id="ctq_BETH">-</td><td class="price-col"><span class="na">N/A</span></td><td><input type="number" id="cc_BETH" data-ls="cc_BETH" step="any" min="0" placeholder="成本" style="width:82px" class="qi cost-inp" oninput="onInput(this)"></td><td class="val" id="ctv_BETH">-</td><td id="cpl_BETH">-</td></tr>
+<tr><td class="aname-cell"><span class="aname">USDT</span></td><td><input type="number" id="cq_USDT_0" data-ls="cq_USDT_0" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_USDT_1" data-ls="cq_USDT_1" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_USDT_2" data-ls="cq_USDT_2" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_USDT_3" data-ls="cq_USDT_3" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_USDT_4" data-ls="cq_USDT_4" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_USDT_5" data-ls="cq_USDT_5" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_USDT_6" data-ls="cq_USDT_6" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td class="totqty" id="ctq_USDT">-</td><td class="price-col"><span class="na">N/A</span></td><td><input type="number" id="cc_USDT" data-ls="cc_USDT" step="any" min="0" placeholder="成本" style="width:82px" class="qi cost-inp" oninput="onInput(this)"></td><td class="val" id="ctv_USDT">-</td><td id="cpl_USDT">-</td></tr>
+<tr><td class="aname-cell"><span class="aname">USDC</span></td><td><input type="number" id="cq_USDC_0" data-ls="cq_USDC_0" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_USDC_1" data-ls="cq_USDC_1" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_USDC_2" data-ls="cq_USDC_2" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_USDC_3" data-ls="cq_USDC_3" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_USDC_4" data-ls="cq_USDC_4" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_USDC_5" data-ls="cq_USDC_5" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_USDC_6" data-ls="cq_USDC_6" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td class="totqty" id="ctq_USDC">-</td><td class="price-col"><span class="na">N/A</span></td><td><input type="number" id="cc_USDC" data-ls="cc_USDC" step="any" min="0" placeholder="成本" style="width:82px" class="qi cost-inp" oninput="onInput(this)"></td><td class="val" id="ctv_USDC">-</td><td id="cpl_USDC">-</td></tr>
+<tr><td class="aname-cell"><span class="aname">BNB</span></td><td><input type="number" id="cq_BNB_0" data-ls="cq_BNB_0" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_BNB_1" data-ls="cq_BNB_1" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_BNB_2" data-ls="cq_BNB_2" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_BNB_3" data-ls="cq_BNB_3" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_BNB_4" data-ls="cq_BNB_4" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_BNB_5" data-ls="cq_BNB_5" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_BNB_6" data-ls="cq_BNB_6" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td class="totqty" id="ctq_BNB">-</td><td class="price-col"><span class="na">N/A</span></td><td><input type="number" id="cc_BNB" data-ls="cc_BNB" step="any" min="0" placeholder="成本" style="width:82px" class="qi cost-inp" oninput="onInput(this)"></td><td class="val" id="ctv_BNB">-</td><td id="cpl_BNB">-</td></tr>
+<tr><td class="aname-cell"><span class="aname">SOL</span></td><td><input type="number" id="cq_SOL_0" data-ls="cq_SOL_0" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_SOL_1" data-ls="cq_SOL_1" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_SOL_2" data-ls="cq_SOL_2" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_SOL_3" data-ls="cq_SOL_3" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_SOL_4" data-ls="cq_SOL_4" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_SOL_5" data-ls="cq_SOL_5" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_SOL_6" data-ls="cq_SOL_6" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td class="totqty" id="ctq_SOL">-</td><td class="price-col"><span class="na">N/A</span></td><td><input type="number" id="cc_SOL" data-ls="cc_SOL" step="any" min="0" placeholder="成本" style="width:82px" class="qi cost-inp" oninput="onInput(this)"></td><td class="val" id="ctv_SOL">-</td><td id="cpl_SOL">-</td></tr>
+<tr><td class="aname-cell"><span class="aname">BNSOL</span></td><td><input type="number" id="cq_BNSOL_0" data-ls="cq_BNSOL_0" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_BNSOL_1" data-ls="cq_BNSOL_1" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_BNSOL_2" data-ls="cq_BNSOL_2" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_BNSOL_3" data-ls="cq_BNSOL_3" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_BNSOL_4" data-ls="cq_BNSOL_4" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_BNSOL_5" data-ls="cq_BNSOL_5" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="cq_BNSOL_6" data-ls="cq_BNSOL_6" step="any" min="0" placeholder="0" style="width:68px" class="qi" oninput="onInput(this)"></td><td class="totqty" id="ctq_BNSOL">-</td><td class="price-col"><span class="na">N/A</span></td><td><input type="number" id="cc_BNSOL" data-ls="cc_BNSOL" step="any" min="0" placeholder="成本" style="width:82px" class="qi cost-inp" oninput="onInput(this)"></td><td class="val" id="ctv_BNSOL">-</td><td id="cpl_BNSOL">-</td></tr>
+</tbody><tbody id="custom-crypto"></tbody><tfoot><tr><td colspan="11" style="text-align:right">加密貨幣小計（TWD）</td><td colspan="2"><strong id="sub_crypto_f">NT$ 0</strong></td></tr></tfoot></table></div><div class="add-section"><div class="add-form" id="add-form-crypto">  <input type="text" id="add-sym-crypto" placeholder="代號 (e.g. DOGE)" style="width:130px">  <input type="text" id="add-name-crypto" placeholder="顯示名稱（選填）" style="width:150px">  <button class="confirm-btn" onclick="confirmAdd('crypto')">確認新增</button>  <button class="cancel-btn" onclick="cancelAdd('crypto')">取消</button></div><button class="add-btn" id="add-btn-crypto" onclick="showAddForm('crypto')">&#xFF0B; 新增標的</button></div>
+</div>
+<div class="card"><div class="card-hd banks"><span>&#x1F4B5; 資金</span><span class="sub-badge" id="sub_banks">NT$ 0</span></div><div class="table-wrap"><table><thead><tr><th class="lft">銀行</th><th>活存 (TWD)</th><th>定存 (TWD)</th><th>小計 (TWD)</th></tr></thead><tbody><tr><td class="aname-cell"><span class="aname">中信</span></td><td><input type="number" id="bd_0_0" data-ls="bd_0_0" step="any" min="0" placeholder="活存" style="width:120px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="bd_0_1" data-ls="bd_0_1" step="any" min="0" placeholder="定存" style="width:120px" class="qi" oninput="onInput(this)"></td><td class="twd" id="bs_0">-</td></tr>
+<tr><td class="aname-cell"><span class="aname">聯邦</span></td><td><input type="number" id="bd_1_0" data-ls="bd_1_0" step="any" min="0" placeholder="活存" style="width:120px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="bd_1_1" data-ls="bd_1_1" step="any" min="0" placeholder="定存" style="width:120px" class="qi" oninput="onInput(this)"></td><td class="twd" id="bs_1">-</td></tr>
+<tr><td class="aname-cell"><span class="aname">LINE BANK</span></td><td><input type="number" id="bd_2_0" data-ls="bd_2_0" step="any" min="0" placeholder="活存" style="width:120px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="bd_2_1" data-ls="bd_2_1" step="any" min="0" placeholder="定存" style="width:120px" class="qi" oninput="onInput(this)"></td><td class="twd" id="bs_2">-</td></tr>
+<tr><td class="aname-cell"><span class="aname">中華郵政</span></td><td><input type="number" id="bd_3_0" data-ls="bd_3_0" step="any" min="0" placeholder="活存" style="width:120px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="bd_3_1" data-ls="bd_3_1" step="any" min="0" placeholder="定存" style="width:120px" class="qi" oninput="onInput(this)"></td><td class="twd" id="bs_3">-</td></tr>
+<tr><td class="aname-cell"><span class="aname">元大</span></td><td><input type="number" id="bd_4_0" data-ls="bd_4_0" step="any" min="0" placeholder="活存" style="width:120px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="bd_4_1" data-ls="bd_4_1" step="any" min="0" placeholder="定存" style="width:120px" class="qi" oninput="onInput(this)"></td><td class="twd" id="bs_4">-</td></tr>
+<tr><td class="aname-cell"><span class="aname">永豐</span></td><td><input type="number" id="bd_5_0" data-ls="bd_5_0" step="any" min="0" placeholder="活存" style="width:120px" class="qi" oninput="onInput(this)"></td><td><input type="number" id="bd_5_1" data-ls="bd_5_1" step="any" min="0" placeholder="定存" style="width:120px" class="qi" oninput="onInput(this)"></td><td class="twd" id="bs_5">-</td></tr>
+</tbody><tbody style="border-top:3px solid #e2e8f0"><tr><td colspan="4" style="padding:6px 10px;background:#f8fafc;font-size:0.72rem;font-weight:700;color:#718096;text-transform:uppercase;letter-spacing:.05em">外幣</td></tr><tr><td class="aname-cell"><span class="aname">美金 (USD)</span></td><td><input type="number" id="fx_USD" data-ls="fx_USD" step="any" min="0" placeholder="USD 金額" style="width:120px" class="qi" oninput="onInput(this)"></td><td class="price-col">1 USD = 32.26 TWD</td><td class="twd" id="fxt_USD">-</td></tr>
+<tr><td class="aname-cell"><span class="aname">日幣 (JPY)</span></td><td><input type="number" id="fx_JPY" data-ls="fx_JPY" step="any" min="0" placeholder="JPY 金額" style="width:120px" class="qi" oninput="onInput(this)"></td><td class="price-col">1 JPY = 0.2161 TWD</td><td class="twd" id="fxt_JPY">-</td></tr>
 </tbody><tfoot><tr><td colspan="3" style="text-align:right">資金小計（TWD）</td><td><strong id="sub_banks_f">NT$ 0</strong></td></tr></tfoot></table></div></div>
 <div class="grand-bar"><div class="grand-sections"><div class="grand-item"><div class="grand-item-label">美股</div><div class="grand-item-val" id="bar_us">NT$ 0</div></div><div class="grand-divider"></div><div class="grand-item"><div class="grand-item-label">台股</div><div class="grand-item-val" id="bar_tw">NT$ 0</div></div><div class="grand-divider"></div><div class="grand-item"><div class="grand-item-label">基金</div><div class="grand-item-val" id="bar_funds">NT$ 0</div></div><div class="grand-divider"></div><div class="grand-item"><div class="grand-item-label">加密貨幣</div><div class="grand-item-val" id="bar_crypto">NT$ 0</div></div><div class="grand-divider"></div><div class="grand-item"><div class="grand-item-label">資金</div><div class="grand-item-val" id="bar_cash">NT$ 0</div></div></div><div class="grand-total-block"><div class="grand-total-label">&#x1F4B0; 總資產（TWD）</div><div class="grand-total-val" id="grand_total">NT$ 0</div></div></div>
 </div>
 <script>
 const DATA = {
-  "update_time": "2026-05-13 07:07:30",
+  "update_time": "2026-06-01 05:03:28",
   "exchange_rates": {
     "TWDUSD": 0.031,
     "JPYUSD": 0.0067
@@ -330,10 +387,10 @@ const DATA = {
   ]
 };
 
-// ── Same idk() as Python side ────────────────────────────────────────────────
+// ── idk(): mirrors Python idk() ──────────────────────────────────────────────
 function idk(s) { return s.replace(/[^a-zA-Z0-9]/g, '_'); }
 
-// ── localStorage ─────────────────────────────────────────────────────────────
+// ── localStorage helpers ──────────────────────────────────────────────────────
 var LS = 'pf2_';
 function lsGet(key) {
   var v = localStorage.getItem(LS + key);
@@ -356,7 +413,7 @@ function onInput(el) {
   lsSave(el);
   var v = parseFloat(el.value);
   if (v > 0) el.classList.add('hv');
-  else el.classList.remove('hv');
+  else       el.classList.remove('hv');
   calc();
 }
 
@@ -368,8 +425,9 @@ function setEl(id, html) {
 function fn(v, d) {
   return v.toLocaleString('en-US', {minimumFractionDigits: d, maximumFractionDigits: d});
 }
-function fUSD(v) { return v === 0 ? '-' : '$ ' + fn(v, 2); }
-function fTWD(v) { return v === 0 ? '-' : 'NT$ ' + fn(Math.round(v), 0); }
+function fUSD(v)   { return v === 0 ? '-' : '$ ' + fn(v, 2); }
+function fTWD(v)   { return v === 0 ? '-' : 'NT$ ' + fn(Math.round(v), 0); }
+function fBadge(v) { return 'NT$ ' + fn(Math.round(v), 0); }
 function fQty(v) {
   if (v === 0) return '-';
   if (v % 1 === 0) return v.toLocaleString('en-US');
@@ -377,147 +435,269 @@ function fQty(v) {
 }
 function fPnl(pct) {
   var cls = pct >= 0 ? 'pnl-pos' : 'pnl-neg';
-  var sign = pct >= 0 ? '+' : '';
-  return '<span class="' + cls + '">' + sign + fn(pct, 2) + '%</span>';
+  return '<span class="' + cls + '">' + (pct >= 0 ? '+' : '') + fn(pct, 2) + '%</span>';
 }
 function naSpan() { return '<span class="na">N/A</span>'; }
-function fBadge(v_twd) {
-  return 'NT$ ' + fn(Math.round(v_twd), 0);
+
+// ── Calculation: one stock/crypto row ─────────────────────────────────────────
+function calcUsStock(s, usdToTwd) {
+  var k = idk(s.symbol), price = s.price, totalQty = 0, totalUSD = 0;
+  DATA.us_brokers.forEach(function(_, bi) {
+    var qty = lsGet('sq_' + k + '_' + bi);
+    totalQty += qty;
+    var v = (price !== null && qty > 0) ? price * qty : null;
+    setEl('sv_' + k + '_' + bi, v !== null ? fUSD(v) : (qty > 0 ? naSpan() : '-'));
+    if (v !== null) totalUSD += v;
+  });
+  setEl('sq_' + k + '_tot', totalQty > 0 ? fQty(totalQty) : '-');
+  setEl('sv_' + k + '_tot', totalUSD > 0 ? fUSD(totalUSD) : '-');
+  var cost = lsGet('sc_' + k);
+  setEl('spl_' + k, (price !== null && cost > 0) ? fPnl((price - cost) / cost * 100) : '-');
+  return totalUSD * usdToTwd;
+}
+function calcTwStock(s) {
+  var k = idk(s.symbol), price = s.price, totalTWD = 0;
+  DATA.tw_brokers.forEach(function(_, bi) {
+    var qty = lsGet('tq_' + k + '_' + bi);
+    var v = (price !== null && qty > 0) ? price * qty : null;
+    setEl('tv_' + k + '_' + bi, v !== null ? fTWD(v) : (qty > 0 ? naSpan() : '-'));
+    if (v !== null) totalTWD += v;
+  });
+  setEl('tv_' + k + '_tot', totalTWD > 0 ? fTWD(totalTWD) : '-');
+  var cost = lsGet('tc_' + k);
+  setEl('tpl_' + k, (price !== null && cost > 0) ? fPnl((price - cost) / cost * 100) : '-');
+  return totalTWD;
+}
+function calcCrypto(c, usdToTwd) {
+  var sym = c.symbol, price = c.price, totalQty = 0;
+  DATA.exchanges.forEach(function(_, ei) { totalQty += lsGet('cq_' + sym + '_' + ei); });
+  setEl('ctq_' + sym, totalQty > 0 ? fQty(totalQty) : '-');
+  var totalUSD = (price !== null && totalQty > 0) ? price * totalQty : null;
+  setEl('ctv_' + sym, totalUSD !== null ? fUSD(totalUSD) : (totalQty > 0 ? naSpan() : '-'));
+  var cost = lsGet('cc_' + sym);
+  setEl('cpl_' + sym, (price !== null && cost > 0) ? fPnl((price - cost) / cost * 100) : '-');
+  return totalUSD !== null ? totalUSD * usdToTwd : 0;
 }
 
-// ── Main calculation ─────────────────────────────────────────────────────────
+// ── Main calculation ──────────────────────────────────────────────────────────
 function calc() {
   var r = DATA.exchange_rates;
-  var usdToTwd = 1 / r.TWDUSD;        // 1 USD → TWD
-  var jpyToTwd = r.JPYUSD / r.TWDUSD; // 1 JPY → TWD
-
+  var usdToTwd = 1 / r.TWDUSD;
+  var jpyToTwd = r.JPYUSD / r.TWDUSD;
   var subUsTwd = 0, subTwTwd = 0, subFundsTwd = 0, subCryptoTwd = 0, subCashTwd = 0;
 
-  // ── US Stocks ──────────────────────────────────────────────────────────────
-  DATA.us_stocks.forEach(function(s) {
-    var k = idk(s.symbol);
-    var price = s.price; // USD
-    var totalQty = 0, totalUSD = 0;
-
-    DATA.us_brokers.forEach(function(_, bi) {
-      var qty = lsGet('sq_' + k + '_' + bi);
-      totalQty += qty;
-      var v = (price !== null && qty > 0) ? price * qty : null;
-      setEl('sv_' + k + '_' + bi, v !== null ? fUSD(v) : (qty > 0 ? naSpan() : '-'));
-      if (v !== null) totalUSD += v;
-    });
-
-    setEl('sv_' + k + '_tot', totalUSD > 0 ? fUSD(totalUSD) : '-');
-
-    var cost = lsGet('sc_' + k);
-    if (price !== null && cost > 0) {
-      setEl('spl_' + k, fPnl((price - cost) / cost * 100));
-    } else {
-      setEl('spl_' + k, '-');
-    }
-
-    subUsTwd += totalUSD * usdToTwd;
+  // US stocks (DATA + pending custom)
+  DATA.us_stocks.forEach(function(s) { subUsTwd += calcUsStock(s, usdToTwd); });
+  csGetPending('us').forEach(function(item) {
+    calcUsStock({symbol: item.symbol, price: null}, usdToTwd);
   });
   setEl('sub_us',   fBadge(subUsTwd));
   setEl('sub_us_f', fBadge(subUsTwd));
 
-  // ── TW Stocks ──────────────────────────────────────────────────────────────
-  DATA.tw_stocks.forEach(function(s) {
-    var k = idk(s.symbol);
-    var price = s.price; // TWD
-    var totalQty = 0, totalTWD = 0;
-
-    DATA.tw_brokers.forEach(function(_, bi) {
-      var qty = lsGet('tq_' + k + '_' + bi);
-      totalQty += qty;
-      var v = (price !== null && qty > 0) ? price * qty : null;
-      setEl('tv_' + k + '_' + bi, v !== null ? fTWD(v) : (qty > 0 ? naSpan() : '-'));
-      if (v !== null) totalTWD += v;
-    });
-
-    setEl('tv_' + k + '_tot', totalTWD > 0 ? fTWD(totalTWD) : '-');
-
-    var cost = lsGet('tc_' + k);
-    if (price !== null && cost > 0) {
-      setEl('tpl_' + k, fPnl((price - cost) / cost * 100));
-    } else {
-      setEl('tpl_' + k, '-');
-    }
-
-    subTwTwd += totalTWD;
-  });
+  // TW stocks (DATA + pending custom)
+  DATA.tw_stocks.forEach(function(s) { subTwTwd += calcTwStock(s); });
+  csGetPending('tw').forEach(function(item) { calcTwStock({symbol: item.symbol, price: null}); });
   setEl('sub_tw',   fBadge(subTwTwd));
   setEl('sub_tw_f', fBadge(subTwTwd));
 
-  // ── Funds ──────────────────────────────────────────────────────────────────
-  DATA.funds.forEach(function(_, fi) {
-    subFundsTwd += lsGet('fv_' + fi);
-  });
+  // Funds
+  DATA.funds.forEach(function(_, fi) { subFundsTwd += lsGet('fv_' + fi); });
   setEl('sub_funds',   fBadge(subFundsTwd));
   setEl('sub_funds_f', fBadge(subFundsTwd));
 
-  // ── Crypto ─────────────────────────────────────────────────────────────────
-  DATA.crypto.forEach(function(c) {
-    var sym = c.symbol;
-    var price = c.price; // USD
-    var totalQty = 0;
-
-    DATA.exchanges.forEach(function(_, ei) {
-      totalQty += lsGet('cq_' + sym + '_' + ei);
-    });
-
-    setEl('ctq_' + sym, totalQty > 0 ? fQty(totalQty) : '-');
-
-    var totalUSD = (price !== null && totalQty > 0) ? price * totalQty : null;
-    setEl('ctv_' + sym, totalUSD !== null ? fUSD(totalUSD) : (totalQty > 0 ? naSpan() : '-'));
-
-    var cost = lsGet('cc_' + sym);
-    if (price !== null && cost > 0) {
-      setEl('cpl_' + sym, fPnl((price - cost) / cost * 100));
-    } else {
-      setEl('cpl_' + sym, '-');
-    }
-
-    if (totalUSD !== null) subCryptoTwd += totalUSD * usdToTwd;
+  // Crypto (DATA + pending custom)
+  DATA.crypto.forEach(function(c) { subCryptoTwd += calcCrypto(c, usdToTwd); });
+  csGetPending('crypto').forEach(function(item) {
+    calcCrypto({symbol: item.symbol, price: null}, usdToTwd);
   });
   setEl('sub_crypto',   fBadge(subCryptoTwd));
   setEl('sub_crypto_f', fBadge(subCryptoTwd));
 
-  // ── Banks ──────────────────────────────────────────────────────────────────
+  // Banks
   var bankTwd = 0;
   DATA.banks.forEach(function(_, bi) {
-    var act = lsGet('bd_' + bi + '_0');
-    var dep = lsGet('bd_' + bi + '_1');
-    var sub = act + dep;
+    var sub = lsGet('bd_' + bi + '_0') + lsGet('bd_' + bi + '_1');
     setEl('bs_' + bi, sub > 0 ? fTWD(sub) : '-');
     bankTwd += sub;
   });
-
-  // ── Foreign currency ───────────────────────────────────────────────────────
-  var usdAmt = lsGet('fx_USD');
-  var jpyAmt = lsGet('fx_JPY');
-  var usdTwd = usdAmt * usdToTwd;
-  var jpyTwd = jpyAmt * jpyToTwd;
+  var usdTwd = lsGet('fx_USD') * usdToTwd;
+  var jpyTwd = lsGet('fx_JPY') * jpyToTwd;
   setEl('fxt_USD', usdTwd > 0 ? fTWD(usdTwd) : '-');
   setEl('fxt_JPY', jpyTwd > 0 ? fTWD(jpyTwd) : '-');
-
   subCashTwd = bankTwd + usdTwd + jpyTwd;
   setEl('sub_banks',   fBadge(subCashTwd));
   setEl('sub_banks_f', fBadge(subCashTwd));
 
-  // ── Grand total ────────────────────────────────────────────────────────────
+  // Grand total + percentages
   var grand = subUsTwd + subTwTwd + subFundsTwd + subCryptoTwd + subCashTwd;
-
-  setEl('bar_us',     fTWD(subUsTwd));
-  setEl('bar_tw',     fTWD(subTwTwd));
-  setEl('bar_funds',  fTWD(subFundsTwd));
-  setEl('bar_crypto', fTWD(subCryptoTwd));
-  setEl('bar_cash',   fTWD(subCashTwd));
+  function pct(v) { return grand > 0 ? (v / grand * 100).toFixed(1) + '%' : '—'; }
+  function barVal(v) {
+    return fTWD(v) + '<span class="pct-label">' + pct(v) + '</span>';
+  }
+  setEl('bar_us',     barVal(subUsTwd));
+  setEl('bar_tw',     barVal(subTwTwd));
+  setEl('bar_funds',  barVal(subFundsTwd));
+  setEl('bar_crypto', barVal(subCryptoTwd));
+  setEl('bar_cash',   barVal(subCashTwd));
   setEl('grand_total', 'NT$ ' + fn(Math.round(grand), 0));
+}
+
+// ── Custom symbols management ─────────────────────────────────────────────────
+var CS_KEY = 'pf2_custom_';
+
+function csGet(section) {
+  try { return JSON.parse(localStorage.getItem(CS_KEY + section) || '[]'); }
+  catch(e) { return []; }
+}
+function csSet(section, arr) { localStorage.setItem(CS_KEY + section, JSON.stringify(arr)); }
+
+function getDataSyms(section) {
+  if (section === 'us')     return DATA.us_stocks.map(function(x) { return x.symbol; });
+  if (section === 'tw')     return DATA.tw_stocks.map(function(x) { return x.symbol; });
+  if (section === 'crypto') return DATA.crypto.map(function(x) { return x.symbol; });
+  return [];
+}
+
+// Custom symbols not yet fetched by update.py (show as "needs update")
+function csGetPending(section) {
+  var dataSyms = getDataSyms(section);
+  return csGet(section).filter(function(x) { return dataSyms.indexOf(x.symbol) < 0; });
+}
+
+function showAddForm(section) {
+  document.getElementById('add-form-' + section).style.display = 'flex';
+  document.getElementById('add-btn-'  + section).style.display = 'none';
+  document.getElementById('add-sym-'  + section).value = '';
+  document.getElementById('add-name-' + section).value = '';
+  document.getElementById('add-sym-'  + section).focus();
+}
+function cancelAdd(section) {
+  document.getElementById('add-form-' + section).style.display = 'none';
+  document.getElementById('add-btn-'  + section).style.display = '';
+}
+function confirmAdd(section) {
+  var raw = document.getElementById('add-sym-' + section).value.trim();
+  if (!raw) { alert('請輸入代號'); return; }
+  var sym = raw.toUpperCase();
+  if (section === 'tw' && sym.indexOf('.TW') < 0) sym += '.TW';
+  var name = document.getElementById('add-name-' + section).value.trim();
+  var all = getDataSyms(section).concat(csGet(section).map(function(x) { return x.symbol; }));
+  if (all.indexOf(sym) >= 0) { alert('"' + sym + '" 已存在'); return; }
+  var arr = csGet(section);
+  arr.push({symbol: sym, name: name});
+  csSet(section, arr);
+  cancelAdd(section);
+  renderCustomRows(section);
+  updateDlBtn();
+  calc();
+}
+function delSymbol(btn) {
+  var sym     = btn.dataset.symbol;
+  var section = btn.dataset.section;
+  if (!confirm('確定刪除「' + sym + '」？\n相關數量及成本資料也將一併清除。')) return;
+  csSet(section, csGet(section).filter(function(x) { return x.symbol !== sym; }));
+  var k = idk(sym);
+  if (section === 'us') {
+    DATA.us_brokers.forEach(function(_, bi) { localStorage.removeItem(LS + 'sq_' + k + '_' + bi); });
+    localStorage.removeItem(LS + 'sc_' + k);
+  } else if (section === 'tw') {
+    DATA.tw_brokers.forEach(function(_, bi) { localStorage.removeItem(LS + 'tq_' + k + '_' + bi); });
+    localStorage.removeItem(LS + 'tc_' + k);
+  } else if (section === 'crypto') {
+    DATA.exchanges.forEach(function(_, ei) { localStorage.removeItem(LS + 'cq_' + sym + '_' + ei); });
+    localStorage.removeItem(LS + 'cc_' + sym);
+  }
+  renderCustomRows(section);
+  updateDlBtn();
+  calc();
+}
+
+// Build an input element string for custom rows
+function mkInp(id, w, ph, extraCls) {
+  return '<input type="number" id="' + id + '" data-ls="' + id
+    + '" step="any" min="0" placeholder="' + (ph || '0')
+    + '" style="width:' + w + 'px" class="qi' + (extraCls || '')
+    + '" oninput="onInput(this)">';
+}
+
+function renderCustomRows(section) {
+  var tbody = document.getElementById('custom-' + section);
+  if (!tbody) return;
+  tbody.innerHTML = '';
+  csGetPending(section).forEach(function(item) {
+    var sym = item.symbol, k = idk(sym);
+    var namePart = item.name
+      ? ' <span class="aname-sub">' + item.name + '</span>' : '';
+    var label = '<span class="aname">' + sym + namePart
+      + ' <span class="custom-tag">自訂</span></span>'
+      + '<button class="del-btn" data-section="' + section
+      + '" data-symbol="' + sym + '" onclick="delSymbol(this)" title="刪除">&#x2715;</button>';
+    var html = '<td class="aname-cell">' + label + '</td>';
+
+    if (section === 'us') {
+      DATA.us_brokers.forEach(function(_, bi) {
+        var id = 'sq_' + k + '_' + bi;
+        html += '<td>' + mkInp(id, 78, '0', '') + '</td>'
+              + '<td class="val" id="sv_' + k + '_' + bi + '">-</td>';
+      });
+      html += '<td class="totqty" id="sq_' + k + '_tot">-</td>'
+            + '<td class="val" id="sv_' + k + '_tot">-</td>'
+            + '<td class="needs-upd">需重新執行<br>update.py</td>'
+            + '<td>' + mkInp('sc_' + k, 82, '成本', ' cost-inp') + '</td>'
+            + '<td id="spl_' + k + '">-</td>';
+    } else if (section === 'tw') {
+      DATA.tw_brokers.forEach(function(_, bi) {
+        var id = 'tq_' + k + '_' + bi;
+        html += '<td>' + mkInp(id, 78, '0', '') + '</td>'
+              + '<td class="twd" id="tv_' + k + '_' + bi + '">-</td>';
+      });
+      html += '<td class="twd" id="tv_' + k + '_tot">-</td>'
+            + '<td class="needs-upd">需重新執行<br>update.py</td>'
+            + '<td>' + mkInp('tc_' + k, 82, '成本', ' cost-inp') + '</td>'
+            + '<td id="tpl_' + k + '">-</td>';
+    } else if (section === 'crypto') {
+      DATA.exchanges.forEach(function(_, ei) {
+        var id = 'cq_' + sym + '_' + ei;
+        html += '<td>' + mkInp(id, 68, '0', '') + '</td>';
+      });
+      html += '<td class="totqty" id="ctq_' + sym + '">-</td>'
+            + '<td class="needs-upd">需重新執行<br>update.py</td>'
+            + '<td>' + mkInp('cc_' + sym, 82, '成本', ' cost-inp') + '</td>'
+            + '<td class="val" id="ctv_' + sym + '">-</td>'
+            + '<td id="cpl_' + sym + '">-</td>';
+    }
+
+    var tr = document.createElement('tr');
+    tr.innerHTML = html;
+    tbody.appendChild(tr);
+    // Restore saved values
+    tr.querySelectorAll('input[data-ls]').forEach(function(el) {
+      var v = lsGet(el.dataset.ls);
+      if (v > 0) { el.value = v; el.classList.add('hv'); }
+    });
+  });
+}
+
+function updateDlBtn() {
+  var has = ['us', 'tw', 'crypto'].some(function(s) { return csGet(s).length > 0; });
+  var btn = document.getElementById('dl-custom-btn');
+  if (btn) btn.style.display = has ? '' : 'none';
+}
+
+function downloadCustom() {
+  var obj = {us_stocks: csGet('us'), tw_stocks: csGet('tw'), crypto: csGet('crypto')};
+  var blob = new Blob([JSON.stringify(obj, null, 2)], {type: 'application/json'});
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'custom_symbols.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
 }
 
 document.addEventListener('DOMContentLoaded', function() {
   restore();
+  ['us', 'tw', 'crypto'].forEach(function(s) { renderCustomRows(s); });
+  updateDlBtn();
   calc();
 });
 
