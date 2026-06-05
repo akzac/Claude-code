@@ -297,9 +297,7 @@ def main():
             CRYPTO.append({"symbol": sym, "coingecko_id": None, "note": ""})
 
     # ── Fetch stock prices ──
-    _US_FALLBACKS = {
-        "CRCL": ["CRCL", "CRCL.US"],
-    }
+    _US_FALLBACKS = {}  # reserved for symbols that need ticker alias fallbacks
     print("  US stocks...")
     for a in US_STOCKS:
         fallbacks = _US_FALLBACKS.get(a["symbol"])
