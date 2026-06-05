@@ -107,17 +107,31 @@ def cost_inp(id_, ls_key, w=82):
 
 def fetch_yf(symbol):
     """Fetch latest close price from Yahoo Finance. Returns float or None."""
+    import math
     try:
         import yfinance as yf
         t = yf.Ticker(symbol)
         hist = t.history(period="5d")
         if not hist.empty:
-            return float(hist["Close"].iloc[-1])
+            v = float(hist["Close"].iloc[-1])
+            return None if math.isnan(v) else v
         p = getattr(t.fast_info, "last_price", None)
-        return float(p) if p else None
+        if p is None:
+            return None
+        v = float(p)
+        return None if math.isnan(v) else v
     except Exception as e:
         print(f"  [warn] {symbol}: {e}")
         return None
+
+
+def fetch_yf_fallback(symbols):
+    """Try each symbol in order; return (price, symbol_used) for the first success."""
+    for sym in symbols:
+        price = fetch_yf(sym)
+        if price is not None:
+            return price, sym
+    return None, None
 
 
 def fetch_coingecko(coin_ids):
@@ -227,9 +241,16 @@ def main():
             CRYPTO.append({"symbol": sym, "coingecko_id": None, "note": ""})
 
     # ── Fetch stock prices ──
+    _US_FALLBACKS = {
+        "CRCL": ["CRCL", "CRCL.US"],
+    }
     print("  US stocks...")
     for a in US_STOCKS:
-        a["price"] = fetch_yf(a["symbol"])
+        fallbacks = _US_FALLBACKS.get(a["symbol"])
+        if fallbacks:
+            a["price"], _ = fetch_yf_fallback(fallbacks)
+        else:
+            a["price"] = fetch_yf(a["symbol"])
         a["currency"] = "USD"
 
     print("  Taiwan stocks...")
