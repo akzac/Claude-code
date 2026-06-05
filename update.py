@@ -115,24 +115,35 @@ def cost_inp(id_, ls_key, w=82):
 # ─── Price fetching ───────────────────────────────────────────────────────────
 
 def fetch_yf(symbol, max_retries=3, delay=2):
-    """Fetch latest close price from Yahoo Finance, retrying up to max_retries times.
+    """Fetch latest price from Yahoo Finance, retrying up to max_retries times.
 
-    Returns float on success, None on all-retry failure.
+    Attempt order per try:
+      1. fast_info.last_price  — faster, works better for newly listed tickers
+      2. history(period='1d')  — last session close as fallback
+
+    Returns float on success, None after all retries fail.
     """
     import math, time
     for attempt in range(max_retries):
         try:
             import yfinance as yf
             t = yf.Ticker(symbol)
-            hist = t.history(period="5d")
+
+            # 1. fast_info first
+            p = getattr(t.fast_info, "last_price", None)
+            if p is not None:
+                v = float(p)
+                if not math.isnan(v):
+                    return v
+
+            # 2. fall back to history
+            hist = t.history(period="1d")
             if not hist.empty:
                 v = float(hist["Close"].iloc[-1])
-                return None if math.isnan(v) else v
-            p = getattr(t.fast_info, "last_price", None)
-            if p is None:
-                return None
-            v = float(p)
-            return None if math.isnan(v) else v
+                if not math.isnan(v):
+                    return v
+
+            return None
         except Exception as e:
             if attempt < max_retries - 1:
                 print(f"  [retry {attempt + 1}/{max_retries - 1}] {symbol}: {e}")
