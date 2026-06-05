@@ -117,6 +117,7 @@ tfoot td:first-child { text-align: left; }
 .pnl-pos { color: #276749; font-weight: 700; }
 .pnl-neg { color: #c53030; font-weight: 700; }
 .price-col { font-family: 'SFMono-Regular', Consolas, monospace; color: #4a5568; }
+.cache-note { display: block; font-size: 0.65rem; color: #a0aec0; font-weight: 400; font-family: inherit; }
 .totqty { font-family: 'SFMono-Regular', Consolas, monospace; color: #1a202c; font-weight: 600; }
 
 /* ── Delete button (inside name cell) ── */
@@ -182,7 +183,7 @@ tr:hover .del-btn { opacity: 1; }
 </head>
 <body>
 <div class="container">
-<div class="page-header"><div class="page-title">&#x1F4CA; 投資記帳面板</div><div class="header-right"><div class="update-time">&#x1F559; 最後更新：2026-06-05 11:24:28</div><div class="rates">1 USD = 32.26 TWD &nbsp;|&nbsp; 1 JPY = 0.2161 TWD</div><button class="dl-btn" id="dl-custom-btn" onclick="downloadCustom()">&#x1F4E5; 匯出自訂標的 (custom_symbols.json)</button></div></div>
+<div class="page-header"><div class="page-title">&#x1F4CA; 投資記帳面板</div><div class="header-right"><div class="update-time">&#x1F559; 最後更新：2026-06-05 12:22:47</div><div class="rates">1 USD = 32.26 TWD &nbsp;|&nbsp; 1 JPY = 0.2161 TWD</div><button class="dl-btn" id="dl-custom-btn" onclick="downloadCustom()">&#x1F4E5; 匯出自訂標的 (custom_symbols.json)</button></div></div>
 <div class="card"><div class="card-hd us"><span>&#x1F1FA;&#x1F1F8; 美股</span><span class="sub-badge" id="sub_us">NT$ 0</span></div><div class="table-wrap"><table><thead><tr><th class="lft" rowspan="2">標的</th><th class="broker-span" colspan="2">Firstrade</th><th class="broker-span" colspan="2">複委託</th><th rowspan="2">合計股數</th><th rowspan="2">合計 (USD)</th><th rowspan="2">現價 (USD)</th><th rowspan="2">成本 (USD)</th><th rowspan="2">損益</th></tr><tr><th>數量</th><th>總值</th><th>數量</th><th>總值</th></tr></thead><tbody><tr><td class="aname-cell"><span class="aname">GOOGL</span></td><td><input type="number" id="sq_GOOGL_0" data-ls="sq_GOOGL_0" step="any" min="0" placeholder="0" style="width:78px" class="qi" oninput="onInput(this)"></td><td class="val" id="sv_GOOGL_0">-</td><td><input type="number" id="sq_GOOGL_1" data-ls="sq_GOOGL_1" step="any" min="0" placeholder="0" style="width:78px" class="qi" oninput="onInput(this)"></td><td class="val" id="sv_GOOGL_1">-</td><td class="totqty" id="sq_GOOGL_tot">-</td><td class="val" id="sv_GOOGL_tot">-</td><td class="price-col"><span class="na">N/A</span></td><td><input type="number" id="sc_GOOGL" data-ls="sc_GOOGL" step="any" min="0" placeholder="成本" style="width:82px" class="qi cost-inp" oninput="onInput(this)"></td><td id="spl_GOOGL">-</td></tr>
 <tr><td class="aname-cell"><span class="aname">MSFT</span></td><td><input type="number" id="sq_MSFT_0" data-ls="sq_MSFT_0" step="any" min="0" placeholder="0" style="width:78px" class="qi" oninput="onInput(this)"></td><td class="val" id="sv_MSFT_0">-</td><td><input type="number" id="sq_MSFT_1" data-ls="sq_MSFT_1" step="any" min="0" placeholder="0" style="width:78px" class="qi" oninput="onInput(this)"></td><td class="val" id="sv_MSFT_1">-</td><td class="totqty" id="sq_MSFT_tot">-</td><td class="val" id="sv_MSFT_tot">-</td><td class="price-col"><span class="na">N/A</span></td><td><input type="number" id="sc_MSFT" data-ls="sc_MSFT" step="any" min="0" placeholder="成本" style="width:82px" class="qi cost-inp" oninput="onInput(this)"></td><td id="spl_MSFT">-</td></tr>
 <tr><td class="aname-cell"><span class="aname">NVDA</span></td><td><input type="number" id="sq_NVDA_0" data-ls="sq_NVDA_0" step="any" min="0" placeholder="0" style="width:78px" class="qi" oninput="onInput(this)"></td><td class="val" id="sv_NVDA_0">-</td><td><input type="number" id="sq_NVDA_1" data-ls="sq_NVDA_1" step="any" min="0" placeholder="0" style="width:78px" class="qi" oninput="onInput(this)"></td><td class="val" id="sv_NVDA_1">-</td><td class="totqty" id="sq_NVDA_tot">-</td><td class="val" id="sv_NVDA_tot">-</td><td class="price-col"><span class="na">N/A</span></td><td><input type="number" id="sc_NVDA" data-ls="sc_NVDA" step="any" min="0" placeholder="成本" style="width:82px" class="qi cost-inp" oninput="onInput(this)"></td><td id="spl_NVDA">-</td></tr>
@@ -224,7 +225,7 @@ tr:hover .del-btn { opacity: 1; }
 </div>
 <script>
 const DATA = {
-  "update_time": "2026-06-05 11:24:28",
+  "update_time": "2026-06-05 12:22:47",
   "exchange_rates": {
     "TWDUSD": 0.031,
     "JPYUSD": 0.0067
@@ -238,37 +239,43 @@ const DATA = {
       "symbol": "GOOGL",
       "name": "GOOGL",
       "price": null,
-      "currency": "USD"
+      "currency": "USD",
+      "cache_time": null
     },
     {
       "symbol": "MSFT",
       "name": "MSFT",
       "price": null,
-      "currency": "USD"
+      "currency": "USD",
+      "cache_time": null
     },
     {
       "symbol": "NVDA",
       "name": "NVDA",
       "price": null,
-      "currency": "USD"
+      "currency": "USD",
+      "cache_time": null
     },
     {
       "symbol": "VTI",
       "name": "VTI",
       "price": null,
-      "currency": "USD"
+      "currency": "USD",
+      "cache_time": null
     },
     {
       "symbol": "CRCL",
       "name": "CRCL",
       "price": null,
-      "currency": "USD"
+      "currency": "USD",
+      "cache_time": null
     },
     {
       "symbol": "QQQ",
       "name": "QQQ",
       "price": null,
-      "currency": "USD"
+      "currency": "USD",
+      "cache_time": null
     }
   ],
   "tw_brokers": [
@@ -279,25 +286,29 @@ const DATA = {
       "symbol": "0050.TW",
       "name": "元大台灣50 (0050)",
       "price": null,
-      "currency": "TWD"
+      "currency": "TWD",
+      "cache_time": null
     },
     {
       "symbol": "006208.TW",
       "name": "富邦優質高息 (006208)",
       "price": null,
-      "currency": "TWD"
+      "currency": "TWD",
+      "cache_time": null
     },
     {
       "symbol": "2330.TW",
       "name": "台積電 (2330)",
       "price": null,
-      "currency": "TWD"
+      "currency": "TWD",
+      "cache_time": null
     },
     {
       "symbol": "2886.TW",
       "name": "兆豐金融 (2886)",
       "price": null,
-      "currency": "TWD"
+      "currency": "TWD",
+      "cache_time": null
     }
   ],
   "funds": [
@@ -323,63 +334,72 @@ const DATA = {
       "coingecko_id": "bitcoin",
       "note": "",
       "price": null,
-      "currency": "USD"
+      "currency": "USD",
+      "cache_time": null
     },
     {
       "symbol": "ETH",
       "coingecko_id": "ethereum",
       "note": "",
       "price": null,
-      "currency": "USD"
+      "currency": "USD",
+      "cache_time": null
     },
     {
       "symbol": "WBETH",
       "coingecko_id": "wrapped-beacon-eth",
       "note": "",
       "price": null,
-      "currency": "USD"
+      "currency": "USD",
+      "cache_time": null
     },
     {
       "symbol": "BETH",
       "coingecko_id": null,
       "note": "※以 ETH 價格替代",
       "price": null,
-      "currency": "USD"
+      "currency": "USD",
+      "cache_time": null
     },
     {
       "symbol": "USDT",
       "coingecko_id": "tether",
       "note": "",
       "price": null,
-      "currency": "USD"
+      "currency": "USD",
+      "cache_time": null
     },
     {
       "symbol": "USDC",
       "coingecko_id": "usd-coin",
       "note": "",
       "price": null,
-      "currency": "USD"
+      "currency": "USD",
+      "cache_time": null
     },
     {
       "symbol": "BNB",
       "coingecko_id": "binancecoin",
       "note": "",
       "price": null,
-      "currency": "USD"
+      "currency": "USD",
+      "cache_time": null
     },
     {
       "symbol": "SOL",
       "coingecko_id": "solana",
       "note": "",
       "price": null,
-      "currency": "USD"
+      "currency": "USD",
+      "cache_time": null
     },
     {
       "symbol": "BNSOL",
       "coingecko_id": "binance-staked-sol",
       "note": "",
       "price": null,
-      "currency": "USD"
+      "currency": "USD",
+      "cache_time": null
     }
   ],
   "banks": [

@@ -23,6 +23,7 @@ from datetime import datetime
 # ─── Constants ────────────────────────────────────────────────────────────────
 
 CUSTOM_FILE = "custom_symbols.json"
+CACHE_FILE  = "price_cache.json"
 
 # ─── Default asset definitions ───────────────────────────────────────────────
 
@@ -76,17 +77,25 @@ def idk(s):
     """Convert symbol to safe HTML ID key (same rule as JS idk())."""
     return re.sub(r'[^a-zA-Z0-9]', '_', s)
 
-def fmt_price(price, currency):
-    """Render a static price string for Python-generated HTML."""
+def fmt_price(price, currency, cache_time=None):
+    """Render a static price string for Python-generated HTML.
+
+    When cache_time is provided the value came from the price cache and a grey
+    date annotation is appended below the price.
+    """
     if price is None:
         return '<span class="na">N/A</span>'
     if currency == "USD":
-        if price >= 1000: return f'${price:,.2f}'
-        if price >= 1:    return f'${price:.4f}'
-        return f'${price:.6f}'
-    if currency == "TWD":
-        return f'NT${price:,.2f}'
-    return str(price)
+        if price >= 1000: s = f'${price:,.2f}'
+        elif price >= 1:  s = f'${price:.4f}'
+        else:             s = f'${price:.6f}'
+    elif currency == "TWD":
+        s = f'NT${price:,.2f}'
+    else:
+        s = str(price)
+    if cache_time:
+        s += f'<span class="cache-note">快取 {cache_time[:10]}</span>'
+    return s
 
 def inp(id_, ls_key, w=82, ph="0"):
     """Return an HTML number input element string."""
@@ -105,33 +114,65 @@ def cost_inp(id_, ls_key, w=82):
 
 # ─── Price fetching ───────────────────────────────────────────────────────────
 
-def fetch_yf(symbol):
-    """Fetch latest close price from Yahoo Finance. Returns float or None."""
-    import math
-    try:
-        import yfinance as yf
-        t = yf.Ticker(symbol)
-        hist = t.history(period="5d")
-        if not hist.empty:
-            v = float(hist["Close"].iloc[-1])
+def fetch_yf(symbol, max_retries=3, delay=2):
+    """Fetch latest close price from Yahoo Finance, retrying up to max_retries times.
+
+    Returns float on success, None on all-retry failure.
+    """
+    import math, time
+    for attempt in range(max_retries):
+        try:
+            import yfinance as yf
+            t = yf.Ticker(symbol)
+            hist = t.history(period="5d")
+            if not hist.empty:
+                v = float(hist["Close"].iloc[-1])
+                return None if math.isnan(v) else v
+            p = getattr(t.fast_info, "last_price", None)
+            if p is None:
+                return None
+            v = float(p)
             return None if math.isnan(v) else v
-        p = getattr(t.fast_info, "last_price", None)
-        if p is None:
-            return None
-        v = float(p)
-        return None if math.isnan(v) else v
-    except Exception as e:
-        print(f"  [warn] {symbol}: {e}")
-        return None
+        except Exception as e:
+            if attempt < max_retries - 1:
+                print(f"  [retry {attempt + 1}/{max_retries - 1}] {symbol}: {e}")
+                time.sleep(delay)
+            else:
+                print(f"  [warn] {symbol}: {e}")
+    return None
 
 
 def fetch_yf_fallback(symbols):
-    """Try each symbol in order; return (price, symbol_used) for the first success."""
+    """Try each symbol in order (each with full retry logic).
+
+    Returns (price, symbol_used) for the first success, or (None, None).
+    """
     for sym in symbols:
         price = fetch_yf(sym)
         if price is not None:
             return price, sym
     return None, None
+
+
+def read_price_cache():
+    """Read price_cache.json. Returns {symbol: {"price": float, "time": str}}."""
+    if not os.path.exists(CACHE_FILE):
+        return {}
+    try:
+        with open(CACHE_FILE, encoding="utf-8") as f:
+            return json.load(f)
+    except Exception as e:
+        print(f"  [warn] Reading {CACHE_FILE}: {e}")
+        return {}
+
+
+def save_price_cache(cache):
+    """Write price_cache.json."""
+    try:
+        with open(CACHE_FILE, "w", encoding="utf-8") as f:
+            json.dump(cache, f, ensure_ascii=False, indent=2)
+    except Exception as e:
+        print(f"  [warn] Saving {CACHE_FILE}: {e}")
 
 
 def fetch_coingecko(coin_ids):
@@ -219,6 +260,21 @@ def main():
         sys.exit(1)
 
     print("Fetching prices...")
+    price_cache = read_price_cache()
+    fetch_time  = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    def apply_cache(assets, key_fn):
+        """For assets with price=None, fill from cache; set cache_time accordingly."""
+        for a in assets:
+            key = key_fn(a)
+            if a["price"] is not None:
+                price_cache[key] = {"price": a["price"], "time": fetch_time}
+                a["cache_time"] = None
+            elif key in price_cache:
+                a["price"]      = price_cache[key]["price"]
+                a["cache_time"] = price_cache[key]["time"]
+            else:
+                a["cache_time"] = None
 
     # ── Read custom symbols and extend asset lists ──
     custom = read_custom_symbols()
@@ -252,21 +308,31 @@ def main():
         else:
             a["price"] = fetch_yf(a["symbol"])
         a["currency"] = "USD"
+    apply_cache(US_STOCKS, lambda a: a["symbol"])
 
     print("  Taiwan stocks...")
     for a in TW_STOCKS:
         a["price"] = fetch_yf(a["symbol"])
         a["currency"] = "TWD"
+    apply_cache(TW_STOCKS, lambda a: a["symbol"])
 
     print("  Exchange rates...")
     twd_usd = fetch_yf("TWDUSD=X")
     jpy_usd = fetch_yf("JPYUSD=X")
     if twd_usd is None:
-        twd_usd = 0.031
-        print("  [warn] Using fallback TWD/USD = 0.031")
+        cached_rate = price_cache.get("TWDUSD=X")
+        twd_usd = cached_rate["price"] if cached_rate else 0.031
+        src = f"cache ({cached_rate['time'][:10]})" if cached_rate else "hardcoded fallback"
+        print(f"  [warn] TWDUSD=X failed; using {src}: {twd_usd}")
+    else:
+        price_cache["TWDUSD=X"] = {"price": twd_usd, "time": fetch_time}
     if jpy_usd is None:
-        jpy_usd = 0.0067
-        print("  [warn] Using fallback JPY/USD = 0.0067")
+        cached_rate = price_cache.get("JPYUSD=X")
+        jpy_usd = cached_rate["price"] if cached_rate else 0.0067
+        src = f"cache ({cached_rate['time'][:10]})" if cached_rate else "hardcoded fallback"
+        print(f"  [warn] JPYUSD=X failed; using {src}: {jpy_usd}")
+    else:
+        price_cache["JPYUSD=X"] = {"price": jpy_usd, "time": fetch_time}
 
     # ── Resolve CoinGecko IDs for custom crypto missing them ──
     print("  Crypto (CoinGecko)...")
@@ -287,8 +353,11 @@ def main():
         a["price"] = eth_price if (cid is None and a["symbol"] in _CRYPTO_ETH_PROXY) \
                      else cg.get(cid) if cid else None
         a["currency"] = "USD"
+    apply_cache(CRYPTO, lambda a: a["symbol"])
 
-    update_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    save_price_cache(price_cache)
+
+    update_time = fetch_time
 
     data = {
         "update_time":    update_time,
@@ -426,6 +495,7 @@ tfoot td:first-child { text-align: left; }
 .pnl-pos { color: #276749; font-weight: 700; }
 .pnl-neg { color: #c53030; font-weight: 700; }
 .price-col { font-family: 'SFMono-Regular', Consolas, monospace; color: #4a5568; }
+.cache-note { display: block; font-size: 0.65rem; color: #a0aec0; font-weight: 400; font-family: inherit; }
 .totqty { font-family: 'SFMono-Regular', Consolas, monospace; color: #1a202c; font-weight: 600; }
 
 /* ── Delete button (inside name cell) ── */
@@ -879,7 +949,7 @@ def build_us_section(data):
             row += f'<td class="val" id="sv_{k}_{bi}">-</td>'
         row += f'<td class="totqty" id="sq_{k}_tot">-</td>'
         row += f'<td class="val" id="sv_{k}_tot">-</td>'
-        row += f'<td class="price-col">{fmt_price(s["price"], "USD")}</td>'
+        row += f'<td class="price-col">{fmt_price(s["price"], "USD", s.get("cache_time"))}</td>'
         row += f'<td>{cost_inp(f"sc_{k}", f"sc_{k}")}</td>'
         row += f'<td id="spl_{k}">-</td>'
         row += '</tr>\n'
@@ -938,7 +1008,7 @@ def build_tw_section(data):
             row += f'<td>{inp(f"tq_{k}_{bi}", f"tq_{k}_{bi}", w=78)}</td>'
             row += f'<td class="twd" id="tv_{k}_{bi}">-</td>'
         row += f'<td class="twd" id="tv_{k}_tot">-</td>'
-        row += f'<td class="price-col">{fmt_price(s["price"], "TWD")}</td>'
+        row += f'<td class="price-col">{fmt_price(s["price"], "TWD", s.get("cache_time"))}</td>'
         row += f'<td>{cost_inp(f"tc_{k}", f"tc_{k}")}</td>'
         row += f'<td id="tpl_{k}">-</td>'
         row += '</tr>\n'
@@ -1026,7 +1096,7 @@ def build_crypto_section(data):
         for ei in range(len(exchanges)):
             row += f'<td>{inp(f"cq_{sym}_{ei}", f"cq_{sym}_{ei}", w=68)}</td>'
         row += f'<td class="totqty" id="ctq_{sym}">-</td>'
-        row += f'<td class="price-col">{fmt_price(c["price"], "USD")}</td>'
+        row += f'<td class="price-col">{fmt_price(c["price"], "USD", c.get("cache_time"))}</td>'
         row += f'<td>{cost_inp(f"cc_{sym}", f"cc_{sym}")}</td>'
         row += f'<td class="val" id="ctv_{sym}">-</td>'
         row += f'<td id="cpl_{sym}">-</td>'
